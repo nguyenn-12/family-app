@@ -17,7 +17,7 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 3;
 
-  final List<Widget> _pages = const [
+  final List<Widget> _pages = [
     CalendarPage(),
     GalleryPage(),
     ChatPage(),
@@ -27,7 +27,7 @@ class _MainScreenState extends State<MainScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.blue[100],
+      backgroundColor: Colors.white,
       body: _pages[_currentIndex],
       bottomNavigationBar: BottomNav(
         currentIndex: _currentIndex,
