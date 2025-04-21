@@ -20,6 +20,175 @@ class _CalendarPageState extends State<CalendarPage> {
     return _events[DateTime.utc(day.year, day.month, day.day)] ?? [];
   }
 
+  void _showEventDialog({DateTime? selectedDate, Map<String, dynamic>? event}) {
+    final TextEditingController titleController =
+    TextEditingController(text: event?['title'] ?? '');
+    final TextEditingController locationController =
+    TextEditingController(text: event?['location'] ?? '');
+    TimeOfDay selectedTime = event?['time'] != null
+        ? TimeOfDay.fromDateTime(DateTime.parse(event!['time']))
+        : TimeOfDay.now();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+      ),
+      builder: (context) {
+        return Container(
+          decoration: BoxDecoration(
+            color: Color(0xFFFAEFD9), // màu nền dialog
+            borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+          ),
+          child: Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+            left: 24,
+            right: 24,
+            top: 24,
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Header
+                Stack(
+                  children: [
+                    Center(
+                      child: Text(
+                        event == null ? 'Add Event' : 'Edit Event',
+                        style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF331A3F),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      right: 0,
+                      child: IconButton(
+                        icon: Icon(Icons.close),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                // Date
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    '📅 Date: ${selectedDate?.toLocal().toString().split(' ')[0]}',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // Time Picker
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      '🕒 Time: ${selectedTime.format(context)}',
+                      style: TextStyle(fontSize: 18),
+                    ),
+                    TextButton(
+                      child: Text('Choose Time'),
+                      onPressed: () async {
+                        final TimeOfDay? picked = await showTimePicker(
+                          context: context,
+                          initialTime: selectedTime,
+                        );
+                        if (picked != null) {
+                          selectedTime = picked;
+                          // Refresh UI
+                          Navigator.pop(context);
+                          _showEventDialog(
+                            selectedDate: selectedDate,
+                            event: event,
+                          );
+                        }
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+
+                // Title input
+                TextField(
+                  controller: titleController,
+                  decoration: InputDecoration(
+                    labelText: 'Title',
+                    labelStyle: TextStyle(fontSize: 18),
+                  ),
+                  style: TextStyle(fontSize: 18),
+                ),
+                const SizedBox(height: 12),
+
+                // Location input
+                TextField(
+                  controller: locationController,
+                  decoration: InputDecoration(
+                    labelText: 'Location',
+                    labelStyle: TextStyle(fontSize: 18),
+                  ),
+                  style: TextStyle(fontSize: 18),
+                ),
+                const SizedBox(height: 24),
+
+                // Buttons
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    if (event != null)
+                      ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        icon: Icon(Icons.delete, color: Colors.white),
+                        label: Text('Delete', style: TextStyle(fontSize: 16)),
+                        onPressed: () {
+                          // TODO: Delete event
+                          Navigator.pop(context);
+                        },
+                      ),
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Color(0xFF2AD48A),
+                        padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                      ),
+                      icon: Icon(event == null ? Icons.add : Icons.update, color: Colors.white, size: 25),
+                      label: Text(
+                        event == null ? 'Add event' : 'Update',
+                        style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600, color: Colors.white),
+                      ),
+                      onPressed: () {
+                        // TODO: Save/Update event
+                        Navigator.pop(context);
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+              ],
+            ),
+          ),
+          ),
+        );
+      },
+    );
+
+  }
+
+
   @override
   Widget build(BuildContext context) {
     final events = _getEventsForDay(_selectedDay ?? _focusedDay);
@@ -182,6 +351,7 @@ class _CalendarPageState extends State<CalendarPage> {
         onPressed: () {
           // TODO: mở form tạo sự kiện
           print('Tạo sự kiện cho ngày $_selectedDay');
+          _showEventDialog(selectedDate: _selectedDay);
         },
         backgroundColor: Color(0xFF2AD48A),
         shape: RoundedRectangleBorder(
