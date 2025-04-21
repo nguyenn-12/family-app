@@ -40,9 +40,9 @@ class _CalendarPageState extends State<CalendarPage> {
                 borderRadius: BorderRadius.circular(35),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black26,
-                    blurRadius: 18,
-                    offset: Offset(0, 4),
+                    color: Colors.black12,
+                    blurRadius: 10,
+                    offset: Offset(0, 3),
                   )
                 ],
               ),
