@@ -1,37 +1,17 @@
-// import 'package:family/pages/main_screen.dart';
-// import 'package:family/pages/signup.dart';
-// import 'package:flutter/material.dart';
-// import 'package:family/pages/signin.dart';
-// void main() {
-//   runApp(MyApp());
-// }
-//
-// class MyApp extends StatelessWidget {
-//   @override
-//   Widget build(BuildContext context) {
-//     return MaterialApp(
-//       title: 'Family App',
-//       debugShowCheckedModeBanner: false,
-//       theme: ThemeData(
-//         primarySwatch: Colors.blue,
-//       ),
-//       // home: MainScreen(), // hoặc màn hình Login nếu bạn có login flow
-//       // home: SignUp(),
-//       home: SignIn(),
-//     );
-//   }
-// }
-
 import 'package:flutter/material.dart';
 import 'pages/signin.dart';
 import 'pages/signup.dart'; // nhớ iFuture<void>t file Sasync ignUp bạn có
+import 'package:family/pages/main_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/material.dart';
+import 'firebase_options.dart';
 
-Future<void> main() async {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
-
-  runApp(const MyApp());
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
