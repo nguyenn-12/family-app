@@ -1,3 +1,6 @@
+import 'package:flutter/material.dart';
+import 'pages/signin.dart';
+import 'pages/signup.dart'; // nhớ iFuture<void>t file Sasync ignUp bạn có
 import 'package:family/pages/main_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
@@ -12,15 +15,17 @@ void main() async {
 }
 
 class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Family App',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
-      home: MainScreen(), // hoặc màn hình Login nếu bạn có login flow
+      initialRoute: '/',
+      routes: {
+        '/': (context) => const SignIn(),
+        '/signup': (context) => const SignUp(), // 🛠 Khai báo SignUp page ở đây
+      },
     );
   }
 }
