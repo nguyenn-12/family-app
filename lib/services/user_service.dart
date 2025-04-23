@@ -1,0 +1,86 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:family/models/users.dart';
+import 'package:crypto/crypto.dart';
+import 'dart:convert';
+import 'package:family/services/mail_service.dart';
+
+class UserService {
+  static final _usersRef = FirebaseFirestore.instance.collection('users');
+
+  /// 🔐 Hash mật khẩu bằng SHA-256
+  static String _hashPassword(String password) {
+    return sha256.convert(utf8.encode(password)).toString();
+  }
+
+  static Future<void> saveUser(UserModel user) async {
+    final newDoc = _usersRef.doc();
+    final generatedId = newDoc.id;
+
+    // Mã hóa mật khẩu trước khi lưu
+    final hashedPassword =  _hashPassword(user.pass);
+
+    await newDoc.set({
+      'id': generatedId,
+      'email': user.email,
+      'name': user.name,
+      'dob': user.dob.toIso8601String(),
+      'pass': hashedPassword,
+      'avatar': user.avatar,
+      'familyCode': user.familyCode,
+      'gender': user.gender,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+  }
+  static Future<bool> checkEmailExists(String email) async {
+    final query = await FirebaseFirestore.instance
+        .collection('users')
+        .where('email', isEqualTo: email)
+        .get();
+    return query.docs.isNotEmpty;
+  }
+  static Future<bool> verifyUserLogin(String email, String password) async {
+    final hashedPassword = _hashPassword(password);
+
+    final query = await FirebaseFirestore.instance
+        .collection('users')
+        .where('email', isEqualTo: email)
+        .where('pass', isEqualTo: hashedPassword)
+        .get();
+
+    return query.docs.isNotEmpty;
+  }
+
+  static Future<UserModel?> fetchUser(String email) async {
+    final snapshot = await _usersRef.where('email', isEqualTo: email).limit(1).get();
+    if (snapshot.docs.isEmpty) return null;
+
+    final data = snapshot.docs.first.data();
+    return UserModel(
+      id: data['id'],
+      email: data['email'],
+      name: data['name'],
+      dob: DateTime.parse(data['dob']),
+      pass: data['pass'],
+      avatar: data['avatar'],
+      familyCode: data['familyCode'],
+      gender: data['gender'],
+    );
+  }
+  static Future<void> updatePassword(String email, String newPassword) async {
+    final query = await FirebaseFirestore.instance
+        .collection('users')
+        .where('email', isEqualTo: email)
+        .get();
+
+    if (query.docs.isEmpty) return;
+
+    final hashed = _hashPassword(newPassword);
+    final docId = query.docs.first.id;
+
+    await FirebaseFirestore.instance.collection('users').doc(docId).update({'pass': hashed});
+
+
+  }
+
+
+}
