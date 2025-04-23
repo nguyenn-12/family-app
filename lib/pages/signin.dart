@@ -2,6 +2,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:family/pages/main_screen.dart';
+import 'package:family/services/user_service.dart';
+import 'package:family/services/mail_service.dart';
 
 class SignIn extends StatefulWidget {
   const SignIn({Key? key}) : super(key: key);
@@ -14,27 +16,68 @@ class _SignInState extends State<SignIn> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  bool _isSigningIn = false;
+  bool _loginFailed = false;
 
-  void _onSignIn(BuildContext context) {
+
+
+  Future<void> _onSignIn(BuildContext context) async {
     if (_formKey.currentState!.validate()) {
+      setState(() {
+        _isSigningIn = true;
+        _loginFailed = false;
+      });
+
       final email = _emailController.text.trim();
       final password = _passwordController.text.trim();
 
-      // ✨ Check tài khoản đúng
-      if (email == "test@gmail.com" && password == "123456") {
+      final isValid = await UserService.verifyUserLogin(email, password);
+
+      setState(() {
+        _isSigningIn = false;
+        _loginFailed = !isValid;
+
+      });
+
+      if (isValid) {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const MainScreen()),
         );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Incorrect email or password!'),
-            backgroundColor: Colors.redAccent,
-          ),
-        );
       }
     }
+  }
+
+  void _onForgotPassword(BuildContext context) async {
+    final email = _emailController.text.trim();
+    if (email.isEmpty || !RegExp(r'\S+@\S+\.\S+').hasMatch(email)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a valid email')),
+      );
+      return;
+    }
+
+    final exists = await UserService.checkEmailExists(email);
+    if (!exists) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Email not found!')),
+      );
+      return;
+    }
+
+    final newPass = _generateRandomPassword();
+    await UserService.updatePassword(email, newPass);
+    await MailService.sendResetPasswordEmail(recipientEmail: email, newPassword: newPass);
+
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('New password has been sent to your email')),
+    );
+  }
+
+  String _generateRandomPassword() {
+    const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    return List.generate(8, (index) => chars[(DateTime.now().millisecondsSinceEpoch + index) % chars.length]).join();
   }
 
   void _onGoogleSignIn(BuildContext context) {}
@@ -127,7 +170,27 @@ class _SignInState extends State<SignIn> {
                       return null;
                     },
                   ),
-                  const SizedBox(height: 32),
+                  if (_loginFailed) ...[
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text(
+                          'Incorrect email or password!',
+                          style: TextStyle(color: Color(0xFFB71C1C), fontSize: 14),
+                        ),
+                        const SizedBox(width: 2),
+                        TextButton(
+                          onPressed: () => _onForgotPassword(context),
+                          child: const Text(
+                            'Forgot Password?',
+                            style: TextStyle(color: Color(0xFF329B80), fontSize: 14),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                  const SizedBox(height: 24),
                   ElevatedButton(
                     onPressed: () => _onSignIn(context),
                     style: ElevatedButton.styleFrom(

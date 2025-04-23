@@ -1,8 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:family/services/mail_service.dart';
+import 'package:family/services/user_service.dart';
+import 'package:family/models/users.dart';
+import 'main_screen.dart';
 
 class OtpVerification extends StatefulWidget {
   final String email;
-  const OtpVerification({Key? key, required this.email}) : super(key: key);
+  final String name;
+  final String password;
+  final DateTime dob;
+  final String gender;
+  final String otp;
+
+  const OtpVerification({
+    Key? key,
+    required this.email,
+    required this.name,
+    required this.password,
+    required this.dob,
+    required this.gender,
+    required this.otp,
+  }) : super(key: key);
 
   @override
   State<OtpVerification> createState() => _OtpVerificationState();
@@ -10,6 +28,7 @@ class OtpVerification extends StatefulWidget {
 
 class _OtpVerificationState extends State<OtpVerification> {
   final TextEditingController _otpController = TextEditingController();
+  bool _isVerifying = false;
 
   @override
   void dispose() {
@@ -17,53 +36,67 @@ class _OtpVerificationState extends State<OtpVerification> {
     super.dispose();
   }
 
-  void _verifyOtp() {
-    // TODO: Xác thực OTP (_otpController.text)
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Verification successful!')),
-    );
+  Future<void> _verifyOtp() async {
+    setState(() {
+      _isVerifying = true;
+    });
 
-    // Sau xác thực có thể chuyển sang màn hình Home hoặc Login
+    if (_otpController.text.trim() == widget.otp) {
+      final user = UserModel(
+        id: '',
+        email: widget.email,
+        name: widget.name,
+        dob: widget.dob,
+        pass: widget.password,
+        avatar: '',
+        familyCode: '',
+        gender: widget.gender,
+      );
+
+      await UserService.saveUser(user);
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const MainScreen()),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Invalid OTP!')),
+      );
+    }
+
+    setState(() {
+      _isVerifying = false;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Email Authentication'),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: const Text('OTP Verification'), centerTitle: true),
       body: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             const SizedBox(height: 32),
-            Text(
-              'We sent OTP to\n${widget.email}',
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 18),
-            ),
-            const SizedBox(height: 32),
+            Text('Enter the OTP sent to ${widget.email}', textAlign: TextAlign.center),
+            const SizedBox(height: 24),
             TextField(
               controller: _otpController,
               keyboardType: TextInputType.number,
               decoration: const InputDecoration(
                 labelText: 'Enter OTP',
                 border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.lock_open),
               ),
             ),
             const SizedBox(height: 32),
             ElevatedButton(
-              onPressed: _verifyOtp,
-              style: ElevatedButton.styleFrom(
-                minimumSize: const Size(double.infinity, 50),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: const Text('Confirm', style: TextStyle(fontSize: 18)),
+              onPressed: _isVerifying ? null : _verifyOtp,
+              style: ElevatedButton.styleFrom(minimumSize: const Size(double.infinity, 50)),
+              child: _isVerifying
+                  ? const CircularProgressIndicator(color: Colors.white)
+                  : const Text('Confirm', style: TextStyle(fontSize: 18)),
             ),
           ],
         ),
