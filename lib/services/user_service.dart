@@ -3,6 +3,7 @@ import 'package:family/models/users.dart';
 import 'package:crypto/crypto.dart';
 import 'dart:convert';
 import 'package:family/services/mail_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class UserService {
   static final _usersRef = FirebaseFirestore.instance.collection('users');
@@ -82,5 +83,13 @@ class UserService {
 
   }
 
+  static Future<String?> getFamilyCodeForCurrentUser() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return null;
+
+    final doc = await FirebaseFirestore.instance.collection('users').doc(user.email).get();
+    print(user);
+    return doc.data()?['familyCode'];
+  }
 
 }

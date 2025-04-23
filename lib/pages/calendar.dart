@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:family/models/events.dart';
+import 'package:family/services/event_service.dart';
+import 'package:family/services/user_service.dart';
 
 
 class CalendarPage extends StatefulWidget {
@@ -10,36 +12,30 @@ class CalendarPage extends StatefulWidget {
 }
 
 class _CalendarPageState extends State<CalendarPage> {
+
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
   Map<DateTime, List<Event>> _firestoreEvents = {};
 
 
-  // Fake data tạm thời
-  final Map<DateTime, List<String>> _events = {
-    DateTime.utc(2025, 4, 20): ['Sinh nhật mẹ', 'Họp gia đình'],
-    DateTime.utc(2025, 4, 21): ['Đi chơi công viên'],
-  };
-
-
-
-  //List<String> _getEventsForDay(DateTime day) {
-  //  return _events[DateTime.utc(day.year, day.month, day.day)] ?? [];
-  //}
   List<Event> _getEventsForDay(DateTime day) {
     return _firestoreEvents[DateTime(day.year, day.month, day.day)] ?? [];
   }
 
 
   Future<void> _loadEventsFromFirestore() async {
-    final snapshot = await FirebaseFirestore.instance
-        .collection('events')
-        .where('familyCode', isEqualTo: '12345') // Tạm thời hard-code
-        .get();
 
+    //final familyCode = await UserService.getFamilyCodeForCurrentUser();
+    //if (familyCode == null) {
+    //  print('No familyCode found for current user');
+    //  return;
+    //}
+    //final events = await EventService.loadEvents(familyCode);
+
+    final events = await EventService.loadEvents('12345'); // hoặc familyCode nếu có biến
     Map<DateTime, List<Event>> tempEvents = {};
-    for (var doc in snapshot.docs) {
-      Event event = Event.fromMap(doc.data(), doc.id);
+
+    for (var event in events) {
       DateTime key = DateTime(event.day.year, event.day.month, event.day.day);
       tempEvents.putIfAbsent(key, () => []).add(event);
     }
@@ -48,14 +44,13 @@ class _CalendarPageState extends State<CalendarPage> {
       _firestoreEvents = tempEvents;
     });
   }
+
   @override
   void initState() {
     super.initState();
     _selectedDay = _focusedDay;
     _loadEventsFromFirestore();
   }
-
-
 
   void _showEventDialog({DateTime? selectedDate, Map<String, dynamic>? event}) {
     final TextEditingController titleController =
@@ -75,181 +70,186 @@ class _CalendarPageState extends State<CalendarPage> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
       ),
       builder: (context) {
-        return Container(
-          decoration: BoxDecoration(
-            color: Color(0xFFFAEFD9), // màu nền dialog
-            borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
-          ),
-          child: Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
-            left: 24,
-            right: 24,
-            top: 24,
-          ),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Header
-                Stack(
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Container(
+            decoration: BoxDecoration(
+              color: Color(0xFFFFFFFE), // màu nền dialog
+              borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+            ),
+            child: Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+                left: 24,
+                right: 24,
+                top: 24,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Center(
-                      child: Text(
-                        event == null ? 'Add Event' : 'Edit Event',
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF331A3F),
+                    // Header
+                    Stack(
+                      children: [
+                        Center(
+                          child: Text(
+                            event == null ? 'Add Event' : 'Edit Event',
+                            style: TextStyle(
+                              fontSize: 28,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF331A3F),
+                            ),
+
+                          ),
                         ),
+                        Positioned(
+                          right: 0,
+                          child: IconButton(
+                            icon: Icon(Icons.close),
+                            onPressed: () => Navigator.pop(context),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
 
+                    // Date
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        '📅 Date: ${selectedDate?.toLocal().toString().split(' ')[0]}',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ),
-                    Positioned(
-                      right: 0,
-                      child: IconButton(
-                        icon: Icon(Icons.close),
-                        onPressed: () => Navigator.pop(context),
+                    const SizedBox(height: 12),
+
+                    // Time Picker
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '🕒 Time: ${selectedTime.format(context)}',
+                          style: TextStyle(fontSize: 18),
+                        ),
+                        TextButton(
+                          child: Text('Choose Time'),
+                          onPressed: () async {
+                            final TimeOfDay? picked = await showTimePicker(
+                              context: context,
+                              initialTime: selectedTime,
+                            );
+                            if (picked != null) {
+                              setModalState(() {
+                                selectedTime = picked;
+                              });
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Title input
+                    TextField(
+                      controller: titleController,
+                      decoration: InputDecoration(
+                        labelText: 'Title',
+                        labelStyle: TextStyle(fontSize: 18),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-
-                // Date
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    '📅 Date: ${selectedDate?.toLocal().toString().split(' ')[0]}',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-
-                // Time Picker
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      '🕒 Time: ${selectedTime.format(context)}',
                       style: TextStyle(fontSize: 18),
                     ),
-                    TextButton(
-                      child: Text('Choose Time'),
-                      onPressed: () async {
-                        final TimeOfDay? picked = await showTimePicker(
-                          context: context,
-                          initialTime: selectedTime,
-                        );
-                        if (picked != null) {
-                          selectedTime = picked;
-                          // Refresh UI
-                          Navigator.pop(context);
-                          _showEventDialog(
-                            selectedDate: selectedDate,
-                            event: {
-                              ...?event, // giữ lại các field cũ
-                              'time': '${selectedTime.hour.toString().padLeft(2, '0')}:${selectedTime.minute.toString().padLeft(2, '0')}',
+                    const SizedBox(height: 12),
+
+                    // Location input
+                    TextField(
+                      controller: locationController,
+                      decoration: InputDecoration(
+                        labelText: 'Location',
+                        labelStyle: TextStyle(fontSize: 18),
+                      ),
+                      style: TextStyle(fontSize: 18),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Buttons
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        if (event != null)
+                          ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Color(0xFFF33A5C),
+                              padding: EdgeInsets.symmetric(horizontal: 22, vertical: 10),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                            ),
+                            icon: Icon(Icons.delete, color: Colors.white, size: 20),
+                            label: Text('Delete', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: Colors.white)),
+                            onPressed: () async {
+                              await EventService.deleteEvent(event['id']);
+                              Navigator.pop(context);
+                              _loadEventsFromFirestore();
                             },
-                          );
-                        }
-                      },
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
+                          ),
+                        ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Color(0xFF329B80),
+                            padding: EdgeInsets.symmetric(horizontal: 22, vertical: 10),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                          ),
+                          icon: Icon(event == null ? Icons.add : Icons.update, color: Colors.white, size: 20),
+                          label: Text(
+                            event == null ? 'Add event' : 'Update',
+                            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: Colors.white),
+                          ),
+                          onPressed: () async {
+                            final title = titleController.text.trim();
+                            final location = locationController.text.trim();
+                            final formattedTime = '${selectedTime.hour.toString().padLeft(2, '0')}:${selectedTime.minute.toString().padLeft(2, '0')}';
 
-                // Title input
-                TextField(
-                  controller: titleController,
-                  decoration: InputDecoration(
-                    labelText: 'Title',
-                    labelStyle: TextStyle(fontSize: 18),
-                  ),
-                  style: TextStyle(fontSize: 18),
-                ),
-                const SizedBox(height: 12),
+                            if (event == null) {
+                            //  final familyCode = await UserService.getFamilyCodeForCurrentUser();
+                            //  if (familyCode == null) {
+                            //    print("No family code, can't add event.");
+                            //    return;
+                            //  }
+                              // Add new
+                              await EventService.addEvent(
+                                day: selectedDate!,
+                                time: formattedTime,
+                                title: title,
+                                location: location,
+                                //familyCode: familyCode,
+                                familyCode: '12345',
+                              );
 
-                // Location input
-                TextField(
-                  controller: locationController,
-                  decoration: InputDecoration(
-                    labelText: 'Location',
-                    labelStyle: TextStyle(fontSize: 18),
-                  ),
-                  style: TextStyle(fontSize: 18),
-                ),
-                const SizedBox(height: 24),
+                            } else {
+                              // Update
+                              await EventService.updateEvent(
+                                eventId: event['id'],
+                                time: formattedTime,
+                                title: title,
+                                location: location,
+                              );
+                            }
 
-                // Buttons
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    if (event != null)
-                      ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red,
-                          padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                            Navigator.pop(context);
+                            _loadEventsFromFirestore(); // Refresh
+                          },
                         ),
-                        icon: Icon(Icons.delete, color: Colors.white, size: 25),
-                        label: Text('Delete', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600, color: Colors.white)),
-                        onPressed: () async {
-                          await FirebaseFirestore.instance.collection('events').doc(event['id']).delete();
-                          Navigator.pop(context);
-                          _loadEventsFromFirestore();
-                        },
-                      ),
-                    ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Color(0xFF2AD48A),
-                        padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                      ),
-                      icon: Icon(event == null ? Icons.add : Icons.update, color: Colors.white, size: 25),
-                      label: Text(
-                        event == null ? 'Add event' : 'Update',
-                        style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600, color: Colors.white),
-                      ),
-                      onPressed: () async {
-                        final title = titleController.text.trim();
-                        final location = locationController.text.trim();
-                        final formattedTime = '${selectedTime.hour.toString().padLeft(2, '0')}:${selectedTime.minute.toString().padLeft(2, '0')}';
-
-                        if (event == null) {
-                          // Add new
-                          await FirebaseFirestore.instance.collection('events').add({
-                            'day': selectedDate,
-                            'time': formattedTime,
-                            'title': title,
-                            'location': location,
-                            'familyCode': '12345',
-                          });
-                        } else {
-                          // Update
-                          await FirebaseFirestore.instance.collection('events').doc(event['id']).update({
-                            'time': formattedTime,
-                            'title': title,
-                            'location': location,
-                          });
-                        }
-
-                        Navigator.pop(context);
-                        _loadEventsFromFirestore(); // Refresh
-                      },
+                      ],
                     ),
+                    const SizedBox(height: 24),
                   ],
                 ),
-                const SizedBox(height: 24),
-              ],
+              ),
             ),
-          ),
-          ),
+          );
+        },
         );
-      },
+    },
     );
 
   }
@@ -261,7 +261,7 @@ class _CalendarPageState extends State<CalendarPage> {
     final screenHeight = MediaQuery.of(context).size.height;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Color(0xFFF9F8FD),
       body: SafeArea(
         child: Column(
           children: [
@@ -271,7 +271,7 @@ class _CalendarPageState extends State<CalendarPage> {
               margin: EdgeInsets.all(16),
               padding: EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Color(0xFFFAEACA),
+                color: Color(0xFFFFFFFD),
                 borderRadius: BorderRadius.circular(35),
                 boxShadow: [
                   BoxShadow(
@@ -330,11 +330,11 @@ class _CalendarPageState extends State<CalendarPage> {
                     color: Colors.white,
                   ),
                   todayDecoration: BoxDecoration(
-                    color: Color(0xFFECB22F),
+                    color: Color(0xFFEFCB7B),
                     shape: BoxShape.circle,
                   ),
                   selectedDecoration: BoxDecoration(
-                    color: Color(0xFF2AD48A),
+                    color: Color(0xFF329B80),
                     shape: BoxShape.circle,
                   ),
                   markerDecoration: BoxDecoration(
@@ -352,7 +352,7 @@ class _CalendarPageState extends State<CalendarPage> {
                           width: 6,
                           height: 6,
                           decoration: BoxDecoration(
-                            color: Color(0xFFF4AE0F), // màu của dấu chấm
+                            color: Color(0xFFF14C6A), // màu của dấu chấm
                             shape: BoxShape.circle,
                           ),
                         ),
@@ -394,7 +394,7 @@ class _CalendarPageState extends State<CalendarPage> {
                         margin: const EdgeInsets.symmetric(vertical: 6),
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Color(0xFF2AD48A),
+                          color: Color(0xD0509786),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Row(
@@ -403,8 +403,8 @@ class _CalendarPageState extends State<CalendarPage> {
                             const SizedBox(width: 12),
                             Expanded(
                               child: Text(
-                                '${event.title} (${event.time})',
-                                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
+                                '(${event.time}) ${event.title} - ${event.location} ',
+                                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: Colors.white),
                               ),
                             ),
                           ],
@@ -425,7 +425,7 @@ class _CalendarPageState extends State<CalendarPage> {
           print('Tạo sự kiện cho ngày $_selectedDay');
           _showEventDialog(selectedDate: _selectedDay);
         },
-        backgroundColor: Color(0xFF2AD48A),
+        backgroundColor: Color(0xFF329B80),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(30), // độ cong góc
         ),
