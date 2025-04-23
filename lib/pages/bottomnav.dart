@@ -15,7 +15,7 @@ class BottomNav extends StatelessWidget {
   Widget build(BuildContext context) {
     return CurvedNavigationBar(
       index: currentIndex,
-      backgroundColor: Colors.transparent,
+      backgroundColor:Color(0xFFF9F8FD),
       color: Color(0xFF331A3F),
       buttonBackgroundColor: Color(0xFFECB22F),
       animationDuration: Duration(milliseconds: 300),
