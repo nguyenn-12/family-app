@@ -4,6 +4,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:family/pages/main_screen.dart';
 import 'package:family/services/user_service.dart';
 import 'package:family/services/mail_service.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:family/models/users.dart';
 
 class SignIn extends StatefulWidget {
   const SignIn({Key? key}) : super(key: key);
@@ -47,6 +50,53 @@ class _SignInState extends State<SignIn> {
       }
     }
   }
+  Future<void> _onGoogleSignIn(BuildContext context) async {
+    try {
+      await GoogleSignIn().signOut(); // force choose account
+      final googleUser = await GoogleSignIn().signIn();
+      if (googleUser == null) return; // User cancelled
+
+      final googleAuth = await googleUser.authentication;
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      final userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
+      final user = userCredential.user;
+
+      if (user != null) {
+        final email = user.email ?? '';
+        final name = user.displayName ?? '';
+        final photo = user.photoURL ?? '';
+
+        final exists = await UserService.checkEmailExists(email);
+        if (!exists) {
+          final userModel = UserModel(
+            id: '',
+            email: email,
+            name: name,
+            dob: DateTime.now(), // default, user can update later
+            pass: '',
+            avatar: photo,
+            familyCode: '',
+            gender: '',
+          );
+          await UserService.saveUser(userModel);
+        }
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const MainScreen()),
+        );
+      }
+    } catch (e) {
+      print('Google Sign-In failed: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Google sign-in failed')),
+      );
+    }
+  }
 
   void _onForgotPassword(BuildContext context) async {
     final email = _emailController.text.trim();
@@ -79,8 +129,6 @@ class _SignInState extends State<SignIn> {
     const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     return List.generate(8, (index) => chars[(DateTime.now().millisecondsSinceEpoch + index) % chars.length]).join();
   }
-
-  void _onGoogleSignIn(BuildContext context) {}
 
   void _onSignUp(BuildContext context) {
     Navigator.pushNamed(context, '/signup');
