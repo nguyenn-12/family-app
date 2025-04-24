@@ -330,7 +330,7 @@ class _CalendarPageState extends State<CalendarPage> {
                     color: Colors.white,
                   ),
                   todayDecoration: BoxDecoration(
-                    color: Color(0xFFEFCB7B),
+                    color: Color(0xFFF3DEAD),
                     shape: BoxShape.circle,
                   ),
                   selectedDecoration: BoxDecoration(
@@ -394,7 +394,7 @@ class _CalendarPageState extends State<CalendarPage> {
                         margin: const EdgeInsets.symmetric(vertical: 6),
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Color(0xD0509786),
+                          color: Color(0xFFEAC063),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Row(
@@ -404,7 +404,7 @@ class _CalendarPageState extends State<CalendarPage> {
                             Expanded(
                               child: Text(
                                 '(${event.time}) ${event.title} - ${event.location} ',
-                                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: Colors.white),
+                                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.white),
                               ),
                             ),
                           ],
