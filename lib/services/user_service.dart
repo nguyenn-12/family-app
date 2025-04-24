@@ -94,7 +94,31 @@ class UserService {
 
     await FirebaseFirestore.instance.collection('users').doc(docId).update({'pass': hashed});
 
+  }
 
+  // TODO: Update toàn bộ thông tin người dùng
+  static Future<void> updateUser(UserModel user) async {
+    try {
+      await _usersRef.doc(user.id).update(user.toMap());
+    } catch (e) {
+      throw Exception("Failed to update user: $e");
+    }
+  }
+
+  // TODO: Optional: update chỉ một vài trường
+  static Future<void> updateField(String userId, Map<String, dynamic> data) async {
+    await _usersRef.doc(userId).update(data);
+  }
+
+  // TODO: Optional: update familyCode
+  static Future<void> updateFamilyCode(String userId, String familyCode) async {
+    final query = _usersRef.where('id', isEqualTo: userId);
+    final user = await query.get();
+
+    if (user.docs.isNotEmpty) {
+      final docId = user.docs.first.id;
+      await _usersRef.doc(docId).update({'familyCode': familyCode});
+    }
   }
 
   static Future<String?> getFamilyCodeForCurrentUser() async {
@@ -106,16 +130,5 @@ class UserService {
     return doc.data()?['familyCode'];
   }
 
-  static Future<void> updateFamilyCode(String userId, String familyCode) async {
-    final query = _usersRef.where('id', isEqualTo: userId);
-    final user = await query.get();
-
-    if (user.docs.isNotEmpty) {
-      final docId = user.docs.first.id;
-      await _usersRef.doc(docId).update({'familyCode': familyCode});
-    }
-
-
-  }
 
 }

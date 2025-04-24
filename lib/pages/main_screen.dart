@@ -6,6 +6,7 @@ import 'package:family/pages/profile.dart';
 import 'package:flutter/material.dart';
 import 'package:curved_navigation_bar/curved_navigation_bar.dart';
 import 'package:family/models/users.dart';
+import 'package:family/pages/edit_profile.dart';
 
 
 class MainScreen extends StatefulWidget {
@@ -30,6 +31,7 @@ class _MainScreenState extends State<MainScreen> {
       GalleryPage(),
       ChatPage(),
       ProfilePage(user: widget.user),
+      EditProfilePage(user:widget.user)
     ];
   }
 
@@ -38,6 +40,7 @@ class _MainScreenState extends State<MainScreen> {
     'Gallery',
     'Chat',
     'Profile',
+    'Edit Profile'
   ];
 
 
@@ -45,15 +48,17 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(60),
+      appBar: _currentIndex == 3
+          ? null
+          : PreferredSize(
+        preferredSize: const Size.fromHeight(50),
         child: AppBar(
           centerTitle: true,
           title: Text(
             _titles[_currentIndex],
             style: const TextStyle(fontSize: 30, fontWeight: FontWeight.bold, color: Colors.white),
           ),
-          backgroundColor: const Color(0xFFA87CEC),
+          backgroundColor: const Color(0xFFA580D8),
         ),
       ),
 
