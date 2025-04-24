@@ -60,8 +60,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
       backgroundColor: const Color(0xfffdf8fd),
       appBar: AppBar(
         centerTitle: true,
-        title: const Text('Edit Profile', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.white,
+        title: const Text('Edit Profiles', style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold, color: Colors.white)),
+        backgroundColor: Color(0xFFA580D8),
         foregroundColor: Colors.black,
         elevation: 0,
         leading: IconButton(
@@ -70,7 +70,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.check, color: Colors.green),
+            icon: const Icon(Icons.check, color: Colors.green, size: 40,),
             onPressed: () {
               Navigator.pop(context, {
                 'email': emailController.text,
