@@ -5,10 +5,12 @@ import 'package:family/pages/gallery.dart';
 import 'package:family/pages/profile.dart';
 import 'package:flutter/material.dart';
 import 'package:curved_navigation_bar/curved_navigation_bar.dart';
+import 'package:family/models/users.dart';
 
 
 class MainScreen extends StatefulWidget {
-  const MainScreen({Key? key}) : super(key: key);
+  final UserModel user;
+  const MainScreen({Key? key, required this.user}) : super(key: key);
 
   @override
   State<MainScreen> createState() => _MainScreenState();
@@ -17,12 +19,19 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 3;
 
-  final List<Widget> _pages = [
-    CalendarPage(),
-    GalleryPage(),
-    ChatPage(),
-    ProfilePage(),
-  ];
+
+  late final List<Widget> _pages;
+
+  @override
+  void initState() {
+    super.initState();
+    _pages = [
+      CalendarPage(),
+      GalleryPage(),
+      ChatPage(),
+      ProfilePage(user: widget.user),
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {

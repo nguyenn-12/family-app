@@ -33,7 +33,6 @@ class _SignInState extends State<SignIn> {
 
       final email = _emailController.text.trim();
       final password = _passwordController.text.trim();
-
       final isValid = await UserService.verifyUserLogin(email, password);
 
       setState(() {
@@ -43,10 +42,13 @@ class _SignInState extends State<SignIn> {
       });
 
       if (isValid) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const MainScreen()),
-        );
+        final userModel = await UserService.fetchUser(email);
+        if (userModel != null) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => MainScreen(user: userModel)),
+          );
+        }
       }
     }
   }
@@ -80,15 +82,18 @@ class _SignInState extends State<SignIn> {
             pass: '',
             avatar: photo,
             familyCode: '',
-            gender: '',
+            gender: 'Other',
           );
           await UserService.saveUser(userModel);
         }
 
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const MainScreen()),
-        );
+        final userModel = await UserService.fetchUser(email);
+        if (userModel != null) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => MainScreen(user: userModel)),
+          );
+        }
       }
     } catch (e) {
       print('Google Sign-In failed: $e');

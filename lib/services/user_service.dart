@@ -2,8 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:family/models/users.dart';
 import 'package:crypto/crypto.dart';
 import 'dart:convert';
-import 'package:family/services/mail_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+
 
 class UserService {
   static final _usersRef = FirebaseFirestore.instance.collection('users');
@@ -33,21 +33,13 @@ class UserService {
     });
   }
   static Future<bool> checkEmailExists(String email) async {
-    final query = await FirebaseFirestore.instance
-        .collection('users')
-        .where('email', isEqualTo: email)
-        .get();
+    final query = await _usersRef.where('email', isEqualTo: email).get();
     return query.docs.isNotEmpty;
   }
+
   static Future<bool> verifyUserLogin(String email, String password) async {
     final hashedPassword = _hashPassword(password);
-
-    final query = await FirebaseFirestore.instance
-        .collection('users')
-        .where('email', isEqualTo: email)
-        .where('pass', isEqualTo: hashedPassword)
-        .get();
-
+    final query = await _usersRef.where('email', isEqualTo: email).where('pass', isEqualTo: hashedPassword).get();
     return query.docs.isNotEmpty;
   }
 
@@ -67,6 +59,28 @@ class UserService {
       gender: data['gender'],
     );
   }
+
+
+  static Future<UserModel?> getCurrentUser() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return null;
+
+    final snapshot = await _usersRef.where('email', isEqualTo: user.email).limit(1).get();
+    if (snapshot.docs.isEmpty) return null;
+
+    final data = snapshot.docs.first.data();
+    return UserModel(
+      id: data['id'],
+      email: data['email'],
+      name: data['name'],
+      dob: DateTime.parse(data['dob']),
+      pass: data['pass'],
+      avatar: data['avatar'],
+      familyCode: data['familyCode'],
+      gender: data['gender'],
+    );
+  }
+
   static Future<void> updatePassword(String email, String newPassword) async {
     final query = await FirebaseFirestore.instance
         .collection('users')
@@ -90,6 +104,18 @@ class UserService {
     final doc = await FirebaseFirestore.instance.collection('users').doc(user.email).get();
     print(user);
     return doc.data()?['familyCode'];
+  }
+
+  static Future<void> updateFamilyCode(String userId, String familyCode) async {
+    final query = _usersRef.where('id', isEqualTo: userId);
+    final user = await query.get();
+
+    if (user.docs.isNotEmpty) {
+      final docId = user.docs.first.id;
+      await _usersRef.doc(docId).update({'familyCode': familyCode});
+    }
+
+
   }
 
 }
