@@ -57,7 +57,7 @@ class _OtpVerificationState extends State<OtpVerification> {
 
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const MainScreen()),
+        MaterialPageRoute(builder: (context) => MainScreen(user: user),),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(

@@ -48,6 +48,9 @@ dev_dependencies:
   mailer: ^6.4.1
   google_sign_in: ^6.3.0
   intl: ^0.20.2
+  flutter_secure_storage: ^9.2.4
+  image_picker: ^1.1.2
+
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
@@ -72,4 +75,5 @@ flutter:
     - assets/images/login_illustration.png
     - assets/icons/google_icon.png
     - assets/images/app-logo.png
+    - assets/images/default_avatar.png
 
