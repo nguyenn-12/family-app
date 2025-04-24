@@ -24,10 +24,30 @@ class _MainScreenState extends State<MainScreen> {
     ProfilePage(),
   ];
 
+  final List<String> _titles = [
+    'Calendar ',
+    'Gallery',
+    'Chat',
+    'Profile',
+  ];
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(60),
+        child: AppBar(
+          centerTitle: true,
+          title: Text(
+            _titles[_currentIndex],
+            style: const TextStyle(fontSize: 30, fontWeight: FontWeight.bold, color: Colors.white),
+          ),
+          backgroundColor: const Color(0xFFA87CEC),
+        ),
+      ),
+
       body: _pages[_currentIndex],
       bottomNavigationBar: BottomNav(
         currentIndex: _currentIndex,

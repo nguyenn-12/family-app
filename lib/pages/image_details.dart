@@ -12,9 +12,16 @@ class ImageDetailsPage extends StatelessWidget {
     final formattedDate = DateFormat('yyyy-MM-dd – kk:mm').format(image.time);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Image Details'),
-        backgroundColor: const Color(0xFF329B80),
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(60),
+        child: AppBar(
+          centerTitle: true,
+          title: const Text(
+            'Image Details',
+            style: const TextStyle(fontSize: 30, fontWeight: FontWeight.bold, color: Colors.white),
+          ),
+          backgroundColor: const Color(0xFFA87CEC),
+        ),
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
