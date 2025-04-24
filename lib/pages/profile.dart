@@ -280,6 +280,7 @@ class _ProfilePageState extends State<ProfilePage> {
     if (result != null && result is UserModel) {
       setState(() {
         currentUser = result;
+        _loadFamilyMembers();
       });
     }
   }
