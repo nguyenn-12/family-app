@@ -24,42 +24,50 @@ class ImageDetailsPage extends StatelessWidget {
         ),
       ),
       body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Expanded(
-            child: Image.network(
-              image.imageURL,
-              fit: BoxFit.cover,
+            child: Center(
+              child: Image.network(
+                image.imageURL,
+                fit: BoxFit.contain, // giữ đúng tỉ lệ ảnh, không crop, không bóp méo
+              ),
             ),
           ),
           Container(
+            height: 140,
+            width: double.infinity, // full chiều rộng
             padding: const EdgeInsets.all(16),
             decoration: const BoxDecoration(
-              color: Color(0xFFF1F1F1),
-              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+              color: Color(0xFFF9F8FD),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(0)),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  image.description,
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Uploaded by: ${image.uploadedBy}',
-                  style: const TextStyle(fontSize: 14, color: Colors.grey),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Time: $formattedDate',
-                  style: const TextStyle(fontSize: 14, color: Colors.grey),
-                ),
-              ],
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '" ${image.description} "',
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Color(
+                        0xFF2A2730)),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Uploaded by: ${image.uploadedBy}',
+                    style: const TextStyle(fontSize: 14, color: Colors.blueGrey),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Time: $formattedDate',
+                    style: const TextStyle(fontSize: 14, color: Colors.blueGrey),
+                  ),
+                ],
+              ),
             ),
           ),
         ],
       ),
+
+
     );
   }
 }
