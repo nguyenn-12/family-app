@@ -10,8 +10,7 @@ import 'package:family/pages/edit_profile.dart';
 
 
 class MainScreen extends StatefulWidget {
-  final UserModel user;
-  const MainScreen({Key? key, required this.user}) : super(key: key);
+  const MainScreen({Key? key}) : super(key: key);
 
   @override
   State<MainScreen> createState() => _MainScreenState();
@@ -29,16 +28,21 @@ class _MainScreenState extends State<MainScreen> {
     _pages = [
       CalendarPage(user: widget.user),
       GalleryPage(user: widget.user),
-      ChatPage(),
-      ProfilePage(user: widget.user),
-      EditProfilePage(user:widget.user)
+      ChatPage(
+                onGoToProfile: () {
+          setState(() {
+            _currentIndex = 3; // hoặc tab Profile
+          });
+        },),
+      ProfilePage(),
+      EditProfilePage()
     ];
   }
 
   final List<String> _titles = [
     'Calendar ',
     'Gallery',
-    'Chat',
+    'Chatting Room',
     'Profile',
     'Edit Profile'
   ];

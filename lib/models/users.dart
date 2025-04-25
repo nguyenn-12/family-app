@@ -67,5 +67,26 @@ class UserModel {
     );
   }
 
+  factory UserModel.fromJson(Map<String, dynamic> json) => UserModel(
+    id: json['id'],
+    email: json['email'],
+    name: json['name'],
+    dob: DateTime.parse(json['dob']),
+    pass: json['pass'],
+    avatar: json['avatar'] ?? '',
+    familyCode: json['familyCode'] ?? '',
+    gender: json['gender'] ?? '',
+  );
 
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'email': email,
+    'name': name,
+    'dob': dob.toIso8601String(),
+    'pass': pass,
+    'avatar': avatar,
+    'familyCode': familyCode,
+    'gender': gender,
+  };
 }
+

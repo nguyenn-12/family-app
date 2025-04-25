@@ -1,68 +1,87 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:provider/provider.dart';
+
 import 'package:family/pages/edit_profile.dart';
 import 'package:family/models/users.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:family/models/families.dart';
 import 'package:family/services/family_service.dart';
 import 'package:family/services/user_service.dart';
-import 'package:family/models/family.dart';
+import 'package:family/providers/user_provider.dart';
+import 'package:family/pages/signin.dart';
 
 class ProfilePage extends StatefulWidget {
-  final UserModel user;
-  const ProfilePage({super.key, required this.user});
+  const ProfilePage({super.key});
 
   @override
   State<ProfilePage> createState() => _ProfilePageState();
 }
 
-class _ProfilePageState extends State<ProfilePage> {
-  late UserModel currentUser;
-  late bool hasFamily;
+class _ProfilePageState extends State<ProfilePage> with WidgetsBindingObserver {
   List<UserModel> members = [];
   FamilyModel? createdFamily;
-
-  final GlobalKey avatarKey = GlobalKey();
   final TextEditingController _familyCodeController = TextEditingController();
+  final GlobalKey avatarKey = GlobalKey();
 
   @override
   void initState() {
     super.initState();
-    currentUser = widget.user;
-    hasFamily = currentUser.familyCode.isNotEmpty;
-    _familyCodeController.text = currentUser.familyCode;
-    _loadFamilyMembers(); // Load members on start
+    WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final user = Provider.of<UserProvider>(context, listen: false).user;
+      if (user != null && user.familyCode.isNotEmpty) {
+        _familyCodeController.text = user.familyCode;
+        await _loadFamilyMembers(user.familyCode);
+      }
+    });
   }
 
-  Future<void> _loadFamilyMembers() async {
-    if (hasFamily) {
-      final fetchedRaw = await FamilyService.fetchFamilyMembers(currentUser.familyCode);
-      final familyInfo = await FamilyService.getFamilyById(currentUser.familyCode);
-      final parsed = fetchedRaw.map((map) => UserModel.fromMap(map)).toList();
-      setState(() {
-        members = parsed;
-        createdFamily = familyInfo;
-      });
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _familyCodeController.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      final user = Provider.of<UserProvider>(context, listen: false).user;
+      if (user != null && user.familyCode.isNotEmpty) {
+        _loadFamilyMembers(user.familyCode);
+      }
     }
   }
 
-  Future<void> _createFamily() async {
+  Future<void> _loadFamilyMembers(String familyCode) async {
+    final fetchedRaw = await FamilyService.fetchFamilyMembers(familyCode);
+    final familyInfo = await FamilyService.getFamilyById(familyCode);
+    final parsed = fetchedRaw.map((map) => UserModel.fromMap(map)).toList();
+    setState(() {
+      members = parsed;
+      createdFamily = familyInfo;
+    });
+  }
+
+  Future<void> _refreshUser() async {
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final updatedUser = await UserService.fetchUser(userProvider.user!.email);
+    if (updatedUser != null) {
+      userProvider.setUser(updatedUser);
+      _familyCodeController.text = updatedUser.familyCode;
+      if (updatedUser.familyCode.isNotEmpty) {
+        await _loadFamilyMembers(updatedUser.familyCode);
+      }
+    }
+  }
+
+  Future<void> _createFamily(UserModel user) async {
     try {
-      // Tạo family mới bằng FamilyService
-      final familyId = await FamilyService.createFamily(currentUser.id);
-
-      // Cập nhật familyCode cho user hiện tại
-      await UserService.updateFamilyCode(currentUser.id, familyId);
-
-      setState(() {
-        currentUser = currentUser.copyWith(familyCode: familyId);
-        hasFamily = true;
-        _familyCodeController.text = familyId;
-        _loadFamilyMembers();
-      });
-
+      final familyId = await FamilyService.createFamily(user.id);
+      await UserService.updateFamilyCode(user.id, familyId);
+      await _refreshUser();
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
@@ -89,7 +108,7 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
               const SizedBox(height: 8),
               SelectableText(
-                  currentUser.familyCode,
+                  familyId,
                   style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF007B8F)
                   )
               ),
@@ -112,41 +131,20 @@ class _ProfilePageState extends State<ProfilePage> {
         ),
       );
     } catch (e) {
-      debugPrint('Error creating family: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to create family')
-          ),
-      );
+      debugPrint("Error creating family: $e");
     }
   }
-  Future<void> _joinFamily() async {
-    //TODO: implement join logic here
-    final familyCode = _familyCodeController.text.trim();
 
-    if (familyCode.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please enter a family code")),
-      );
-      return;
-    }
+  Future<void> _joinFamily(UserModel user) async {
+    final code = _familyCodeController.text.trim();
+    if (code.isEmpty) return;
 
-    final exists = await FamilyService.getFamilyById(familyCode);
-    if (exists == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Family code not found")),
-      );
-      return;
-    }
-    await UserService.updateFamilyCode(currentUser.id, familyCode);
-    await FamilyService.updateMemberCount(familyCode, 1);
+    final exists = await FamilyService.getFamilyById(code);
+    if (exists == null) return;
 
-    setState(() {
-      currentUser = currentUser.copyWith(familyCode: familyCode);
-      hasFamily = true;
-      _familyCodeController.text = familyCode;
-      _loadFamilyMembers();
-    });
-
+    await UserService.updateFamilyCode(user.id, code);
+    await FamilyService.updateMemberCount(code, 1);
+    await _refreshUser();
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -195,43 +193,26 @@ class _ProfilePageState extends State<ProfilePage> {
         actionsAlignment: MainAxisAlignment.center,
       ),
     );
-
   }
 
-  Future<void> _leaveFamily() async {
-    final familyId = currentUser.familyCode;
-
-    // Giảm số lượng thành viên
+  Future<void> _leaveFamily(UserModel user) async {
+    final familyId = user.familyCode;
     await FamilyService.updateMemberCount(familyId, -1);
 
-    // Lấy thông tin family để kiểm tra người tạo
     final family = await FamilyService.getFamilyById(familyId);
-
-    if (family != null && family.createdBy == currentUser.id) {
-      // Lấy danh sách thành viên khác (không bao gồm currentUser)
-      final allMembers = await FamilyService.fetchFamilyMembers(familyId);
-      final otherMembers = allMembers.where((m) => m['id'] != currentUser.id).toList();
-
-      if (otherMembers.isEmpty) {
-        // Xoá family nếu không còn ai
+    if (family != null && family.createdBy == user.id) {
+      final others = (await FamilyService.fetchFamilyMembers(familyId))
+          .where((m) => m['id'] != user.id)
+          .toList();
+      if (others.isEmpty) {
         await FamilyService.deleteFamily(familyId);
       } else {
-        // Gán người khác làm người tạo mới
-        final newCreatorId = otherMembers.first['id'];
-        await FamilyService.updateCreatedBy(familyId, newCreatorId);
+        await FamilyService.updateCreatedBy(familyId, others.first['id']);
       }
     }
 
-    // Xóa familyCode của currentUser
-    await UserService.updateFamilyCode(currentUser.id, "");
-
-    setState(() {
-      currentUser = currentUser.copyWith(familyCode: "");
-      hasFamily = false;
-      _familyCodeController.text = "";
-      _loadFamilyMembers();
-    });
-
+    await UserService.updateFamilyCode(user.id, "");
+    await _refreshUser();
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -271,123 +252,69 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
+  void _showInfoDialog(String message, String code) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(message, style: const TextStyle(fontWeight: FontWeight.bold)),
+        content: code.isNotEmpty
+            ? SelectableText("Your family code: $code")
+            : null,
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("OK"),
+          )
+        ],
+      ),
+    );
+  }
 
-  void _openEditProfile() async {
+  void _openEditProfile(UserModel user) async {
     final result = await Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => EditProfilePage(user: currentUser)),
+      MaterialPageRoute(builder: (_) => EditProfilePage()),
     );
-    if (result != null && result is UserModel) {
+    final updatedUser = Provider.of<UserProvider>(context, listen: false).user;
+    if (updatedUser != null && updatedUser.familyCode.isNotEmpty) {
       setState(() {
-        currentUser = result;
+        _familyCodeController.text = updatedUser.familyCode;
       });
+      await _loadFamilyMembers(updatedUser.familyCode);
     }
   }
 
-  String _getCreatorName() {
-    final creator = members.firstWhere(
-          (u) => u.id == createdFamily?.createdBy,
-      orElse: () => UserModel(
-        id: '',
-        email: '',
-        name: 'Unknown',
-        dob: DateTime.now(),
-        pass: '',
-        avatar: '',
-        familyCode: '',
-        gender: '',
-      ),
+  Future<void> _logout() async {
+    const storage = FlutterSecureStorage();
+    await storage.delete(key: 'auth_token');
+    await storage.delete(key: 'current_user');
+    Provider.of<UserProvider>(context, listen: false).setUser(null);
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => const SignIn()),
     );
-    return creator.name;
   }
-
 
   @override
   Widget build(BuildContext context) {
+    final user = Provider.of<UserProvider>(context).user;
+    if (user == null) return const Center(child: CircularProgressIndicator());
+    final hasFamily = user.familyCode.isNotEmpty;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F6FA),
       body: SingleChildScrollView(
         child: Column(
           children: [
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(24),
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0xFF00C6A2), Color(0xFF007B8F)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(24),
-                  bottomRight: Radius.circular(24),
-                ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  GestureDetector(
-                    key: avatarKey,
-                    onTap: () async {
-                      final RenderBox renderBox = avatarKey.currentContext!.findRenderObject() as RenderBox;
-                      final Offset offset = renderBox.localToGlobal(Offset.zero);
-                      await showMenu(
-                        context: context,
-                        position: RelativeRect.fromLTRB(
-                          offset.dx,
-                          offset.dy + renderBox.size.height,
-                          offset.dx + renderBox.size.width,
-                          offset.dy,
-                        ),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        color: Colors.white,
-                        items: [
-                          PopupMenuItem<int>(value: 0, child: Row(children: const [Icon(Icons.edit, size: 18, color: Colors.black54), SizedBox(width: 6), Text("Edit Profile", style: TextStyle(fontSize: 14))])),
-                          PopupMenuItem<int>(value: 1, child: Row(children: const [Icon(Icons.logout, size: 18, color: Colors.black54), SizedBox(width: 6), Text("Logout", style: TextStyle(fontSize: 14))])),
-                        ],
-                      ).then((value) async {
-                        if (value == 0) {
-                          _openEditProfile();
-                        } else if (value == 1) {
-                          const storage = FlutterSecureStorage();
-                          await storage.delete(key: 'auth_token');
-                          Navigator.pushReplacementNamed(context, '/');
-                        }
-                      });
-                    },
-                    child: CircleAvatar(
-                      radius: 28,
-                      backgroundColor: Colors.white,
-                      backgroundImage: currentUser.avatar.isNotEmpty ? NetworkImage(currentUser.avatar) : null,
-                      child: currentUser.avatar.isEmpty ? const Icon(Icons.person, color: Color(0xFF007B8F)) : null,
-                    ),
-                  ),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Text(DateFormat('EEEE, MMMM d yyyy').format(DateTime.now()), style: const TextStyle(color: Colors.white70, fontSize: 12)),
-                        const SizedBox(height: 6),
-                        const Text("Welcome", style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 6),
-                        Text(currentUser.name, style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
-                        const Text("Have a nice day !", style: TextStyle(color: Colors.white70, fontSize: 14)),
-                      ],
-                    ),
-                  ),
-                  const Icon(Icons.notifications_none, color: Colors.white),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
+            _buildHeader(user),
             Padding(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(24),
               child: Column(
                 children: [
-                  _buildReadOnlyField("Email", currentUser.email),
+                  _buildReadOnlyField("Email", user.email),
                   const SizedBox(height: 16),
-                  _buildReadOnlyField("Date of Birth", DateFormat('yyyy-MM-dd').format(currentUser.dob)),
+                  _buildReadOnlyField("Date of Birth", DateFormat('yyyy-MM-dd').format(user.dob)),
                   const SizedBox(height: 16),
                   Row(
                     children: [
@@ -403,8 +330,7 @@ class _ProfilePageState extends State<ProfilePage> {
                               borderRadius: BorderRadius.circular(12),
                             ),
                             disabledBorder: OutlineInputBorder(
-                              borderSide: const BorderSide(color: Color(
-                                  0xFF4C4B4B)),
+                              borderSide: const BorderSide(color: Color(0xFF007B8F)),
                               borderRadius: BorderRadius.circular(12),
                             ),
                           ),
@@ -412,14 +338,14 @@ class _ProfilePageState extends State<ProfilePage> {
                       ),
                       if (hasFamily)
                         IconButton(
-                          icon: const Icon(Icons.copy, color: Color(0xFF007B8F)),
+                          icon: const Icon(Icons.copy),
                           onPressed: () {
-                            Clipboard.setData(ClipboardData(text: currentUser.familyCode));
+                            Clipboard.setData(ClipboardData(text: user.familyCode));
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(content: Text("Copied!")),
                             );
                           },
-                        ),
+                        )
                     ],
                   ),
                   const SizedBox(height: 20),
@@ -427,7 +353,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
                       ElevatedButton(
-                        onPressed: hasFamily ? null : _createFamily,
+                        onPressed: hasFamily ? null : () => _createFamily(user),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: hasFamily ? Colors.grey[300] : const Color(0xFF00C6A2),
                           foregroundColor: Colors.white,
@@ -436,7 +362,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         child: const Text("Create"),
                       ),
                       ElevatedButton(
-                        onPressed: hasFamily ? null : _joinFamily,
+                        onPressed: hasFamily ? null : () => _joinFamily(user),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: hasFamily ? Colors.grey[300] : const Color(0xFF007B8F),
                           foregroundColor: Colors.white,
@@ -445,7 +371,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         child: const Text("Join"),
                       ),
                       ElevatedButton(
-                        onPressed: hasFamily ? _leaveFamily : null,
+                        onPressed: hasFamily ? () => _leaveFamily(user) : null,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFFB880CC),
                           foregroundColor: Colors.white,
@@ -456,64 +382,91 @@ class _ProfilePageState extends State<ProfilePage> {
                     ],
                   ),
                   const SizedBox(height: 30),
-                  if (hasFamily)
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text("All Members (${members.length}): ", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                        const SizedBox(height: 10),
-                        SizedBox(
-                          height: 60,
-                          child: ListView.builder(
-                            scrollDirection: Axis.horizontal,
-                            itemCount: members.length,
-                            itemBuilder: (context, index) {
-                              final member = members[index];
-                              return Padding(
-                                padding: const EdgeInsets.only(right: 8.0),
-                                child: CircleAvatar(
-                                  radius: 26,
-                                  backgroundColor: Colors.teal[100 * ((index % 7) + 1)],
-                                  backgroundImage: member.avatar.isNotEmpty
-                                      ? NetworkImage(member.avatar)
-                                      : null,
-                                  child: member.avatar.isEmpty
-                                      ? const Icon(Icons.person, color: Colors.white)
-                                      : null,
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        if (createdFamily != null)
-                          Row(
-                            children: [
-                              const Icon(Icons.verified_user, size: 18, color: Color(0xFF00C6A2)),
-                              const SizedBox(width: 6),
-                              Text(
-                                "Created by: ${_getCreatorName()}",
-                                style: const TextStyle(fontSize: 14, fontStyle: FontStyle.italic, color: Colors.black54),
-                              ),
-                            ],
-                          ),
-
-                      ],
-                    ),
+                  if (hasFamily) _buildFamilyInfo(user),
                 ],
               ),
-            ),
+            )
           ],
         ),
       ),
     );
   }
 
-  Widget _buildReadOnlyField(String label, String value, {bool enabled = true}) {
+  Widget _buildHeader(UserModel user) {
+    return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 30),
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFF00C6A2), Color(0xFF007B8F)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.only(
+            bottomLeft: Radius.circular(24),
+            bottomRight: Radius.circular(24),
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            GestureDetector(
+              key: avatarKey,
+              onTap: () async {
+                final RenderBox renderBox = avatarKey.currentContext!.findRenderObject() as RenderBox;
+                final Offset offset = renderBox.localToGlobal(Offset.zero);
+                await showMenu(
+                  context: context,
+                  position: RelativeRect.fromLTRB(
+                          offset.dx,
+                          offset.dy + renderBox.size.height,
+                          offset.dx + renderBox.size.width,
+                          offset.dy,
+                        ),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  color: Colors.white,
+                  items: [
+                    PopupMenuItem<int>(value: 0, child: Row(children: const [Icon(Icons.edit, size: 18, color: Colors.black54), SizedBox(width: 6), Text("Edit Profile", style: TextStyle(fontSize: 14))])),
+                    PopupMenuItem<int>(value: 1, child: Row(children: const [Icon(Icons.logout, size: 18, color: Colors.black54), SizedBox(width: 6), Text("Logout", style: TextStyle(fontSize: 14))])),
+                  ],
+                ).then((value) async {
+                  if (value == 0) _openEditProfile(user);
+                  if (value == 1) _logout();
+                });
+                },
+              child: CircleAvatar(
+                radius: 32,
+                backgroundColor: Colors.white,
+                backgroundImage: user.avatar.isNotEmpty ? NetworkImage(user.avatar) : null,
+                child: user.avatar.isEmpty ? const Icon(Icons.person, color: Color(0xFF007B8F)) : null,
+              ),
+            ),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Text(DateFormat('EEEE, MMMM d yyyy').format(DateTime.now()), style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                  const SizedBox(height: 6),
+                  const Text("Welcome", style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 6),
+                  Text(user.name, style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+                  const Text("Have a nice day !", style: TextStyle(color: Colors.white70, fontSize: 14)),
+                ],
+              ),
+            ),
+            const Icon(Icons.notifications_none, color: Colors.white, size: 30),
+          ],
+        )
+    );
+  }
+
+  Widget _buildReadOnlyField(String label, String value) {
     return TextField(
       controller: TextEditingController(text: value),
       readOnly: true,
-      enabled: enabled,
+      enabled: false,
+      style: const TextStyle(color: Colors.black), // 👈 text màu đen
       decoration: InputDecoration(
         labelText: label,
         labelStyle: const TextStyle(color: Color(0xFF007B8F)),
@@ -522,10 +475,59 @@ class _ProfilePageState extends State<ProfilePage> {
           borderRadius: BorderRadius.circular(12),
         ),
         disabledBorder: OutlineInputBorder(
-          borderSide: const BorderSide(color: Colors.grey),
+          borderSide: const BorderSide(color: Color(0xFF007B8F)),
           borderRadius: BorderRadius.circular(12),
         ),
       ),
     );
+  }
+
+
+  Widget _buildFamilyInfo(UserModel user) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text("All Members (${members.length})", style: const TextStyle(fontWeight: FontWeight.bold)),
+        const SizedBox(height: 10),
+        SizedBox(
+          height: 60,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: members.length,
+            itemBuilder: (context, index) {
+              final member = members[index];
+              return Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: CircleAvatar(
+                  radius: 26,
+                  backgroundImage: member.avatar.isNotEmpty ? NetworkImage(member.avatar) : null,
+                  child: member.avatar.isEmpty ? const Icon(Icons.person) : null,
+                ),
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 10),
+        if (createdFamily != null)
+          Row(
+            children: [
+              const Icon(Icons.verified_user, size: 16),
+              const SizedBox(width: 6),
+              Text("Created by: ${_getCreatorName()}", style: const TextStyle(fontStyle: FontStyle.italic)),
+            ],
+          ),
+      ],
+    );
+  }
+
+  String _getCreatorName() {
+    final creator = members.firstWhere(
+          (u) => u.id == createdFamily?.createdBy,
+      orElse: () => UserModel(
+        id: '', email: '', name: 'Unknown', dob: DateTime.now(),
+        pass: '', avatar: '', familyCode: '', gender: '',
+      ),
+    );
+    return creator.name;
   }
 }
