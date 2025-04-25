@@ -4,9 +4,13 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:family/models/events.dart';
 import 'package:family/services/event_service.dart';
 import 'package:family/services/user_service.dart';
+import 'package:family/models/users.dart';
 
 
 class CalendarPage extends StatefulWidget {
+  final UserModel user;
+  const CalendarPage({super.key, required this.user});
+
   @override
   _CalendarPageState createState() => _CalendarPageState();
 }
@@ -16,23 +20,31 @@ class _CalendarPageState extends State<CalendarPage> {
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
   Map<DateTime, List<Event>> _firestoreEvents = {};
-
+  late UserModel currentUser;
 
   List<Event> _getEventsForDay(DateTime day) {
     return _firestoreEvents[DateTime(day.year, day.month, day.day)] ?? [];
   }
 
+  @override
+  void initState() {
+    super.initState();
+    currentUser = widget.user;
+    _selectedDay = _focusedDay;
+    _loadEventsFromFirestore();
+
+  }
 
   Future<void> _loadEventsFromFirestore() async {
 
-    //final familyCode = await UserService.getFamilyCodeForCurrentUser();
-    //if (familyCode == null) {
-    //  print('No familyCode found for current user');
-    //  return;
-    //}
-    //final events = await EventService.loadEvents(familyCode);
+    final familyCode = currentUser.familyCode;
+    if (familyCode == null) {
+      print('No familyCode found for current user');
+      return;
+    }
+    final events = await EventService.loadEvents(familyCode);
 
-    final events = await EventService.loadEvents('12345'); // hoặc familyCode nếu có biến
+    //final events = await EventService.loadEvents('12345'); // hoặc familyCode nếu có biến
     Map<DateTime, List<Event>> tempEvents = {};
 
     for (var event in events) {
@@ -45,12 +57,7 @@ class _CalendarPageState extends State<CalendarPage> {
     });
   }
 
-  @override
-  void initState() {
-    super.initState();
-    _selectedDay = _focusedDay;
-    _loadEventsFromFirestore();
-  }
+
 
   void _showEventDialog({DateTime? selectedDate, Map<String, dynamic>? event}) {
     final TextEditingController titleController =
@@ -210,19 +217,19 @@ class _CalendarPageState extends State<CalendarPage> {
                             final formattedTime = '${selectedTime.hour.toString().padLeft(2, '0')}:${selectedTime.minute.toString().padLeft(2, '0')}';
 
                             if (event == null) {
-                            //  final familyCode = await UserService.getFamilyCodeForCurrentUser();
-                            //  if (familyCode == null) {
-                            //    print("No family code, can't add event.");
-                            //    return;
-                            //  }
+                              final familyCode = currentUser.familyCode;
+                              if (familyCode == null) {
+                                print("No family code, can't add event.");
+                                return;
+                              }
                               // Add new
                               await EventService.addEvent(
                                 day: selectedDate!,
                                 time: formattedTime,
                                 title: title,
                                 location: location,
-                                //familyCode: familyCode,
-                                familyCode: '12345',
+                                familyCode: familyCode,
+                                //familyCode: '12345',
                               );
 
                             } else {
