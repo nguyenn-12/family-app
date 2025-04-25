@@ -10,9 +10,15 @@ class UserProvider with ChangeNotifier {
 
   final _storage = const FlutterSecureStorage();
 
-  void setUser(UserModel user) {
+  void setUser(UserModel? user) {
     _user = user;
-    _storage.write(key: 'current_user', value: jsonEncode(user.toJson()));
+
+    if (user != null) {
+      _storage.write(key: 'current_user', value: jsonEncode(user.toJson()));
+    } else {
+      _storage.delete(key: 'current_user');
+    }
+
     notifyListeners();
   }
 
@@ -25,8 +31,14 @@ class UserProvider with ChangeNotifier {
   Future<void> loadUserFromStorage() async {
     final jsonStr = await _storage.read(key: 'current_user');
     if (jsonStr != null) {
-      _user = UserModel.fromJson(jsonDecode(jsonStr));
-      notifyListeners();
+      try {
+        _user = UserModel.fromJson(jsonDecode(jsonStr));
+        notifyListeners();
+      } catch (e) {
+        // Nếu lỗi parse, reset luôn
+        await _storage.delete(key: 'current_user');
+        _user = null;
+      }
     }
   }
 }

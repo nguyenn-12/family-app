@@ -9,12 +9,14 @@ import 'package:intl/intl.dart';
 import 'package:family/pages/chat_bubble.dart';
 import 'package:family/services/image_service.dart';
 import 'package:family/models/users.dart';
+import 'package:provider/provider.dart';
+import 'package:family/providers/user_provider.dart';
+
 
 class ChatPage extends StatefulWidget {
-  final UserModel user;
   final VoidCallback? onGoToProfile;
 
-  const ChatPage({super.key, required this.user, this.onGoToProfile});
+  const ChatPage({super.key, this.onGoToProfile});
 
   @override
   State<ChatPage> createState() => _ChatPageState();
@@ -31,7 +33,6 @@ class _ChatPageState extends State<ChatPage> {
   @override
   void initState() {
     super.initState();
-    currentUser = widget.user;
   }
 
   Future<void> sendMessage({String? text, String? imageUrl}) async {
@@ -117,6 +118,10 @@ class _ChatPageState extends State<ChatPage> {
 
   @override
   Widget build(BuildContext context) {
+    final currentUser = Provider.of<UserProvider>(context).user;
+    if (currentUser == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
     // Nếu chưa có gia đình
     if (currentUser.familyCode.isEmpty) {
       return Center(
