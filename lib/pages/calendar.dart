@@ -377,49 +377,15 @@ class _CalendarPageState extends State<CalendarPage> {
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: events.isEmpty
-                    ? Center(
-                  child: Text(
-                    'No event on this day',
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                )
-                    : ListView.builder(
-                  itemCount: events.length,
-                  itemBuilder: (context, index) {
-                    final event = events[index];
-                    return GestureDetector(
-                      onTap: () => _showEventDialog(selectedDate: _selectedDay, event: {
-                        'id': event.id,
-                        'title': event.title,
-                        'location': event.location,
-                        'time': event.time,
-                      }),
-                      child: Container(
-                        margin: const EdgeInsets.symmetric(vertical: 6),
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Color(0xFFEAC063),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(Icons.event, color: Colors.white, size: 30),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                '(${event.time}) ${event.title} - ${event.location} ',
-                                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.white),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                )
+                      ? Center(
+                      child: Text(
+                       'No event on this day',
+                       style: TextStyle(
+                         fontSize: 18,
+                         color: Colors.grey[600],
+                       ),
+                     ),
+                   ) : _buildEventList(events),
               ),
             ),
           ],
@@ -441,4 +407,143 @@ class _CalendarPageState extends State<CalendarPage> {
           : null,
     );
   }
+
+  Widget _buildEventList(List<Event> events) {
+    final grouped = groupEventsByTimeSlot(events);
+
+    return ListView(
+      children: grouped.entries.map((entry) {
+        final slot = entry.key;
+        final slotEvents = entry.value;
+        final iconColor = _getIconColor(slot);
+        final icon = _getIconForSlot(slot);
+        final backgroundColor = _getBackgroudColor(slot);
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(icon, color: iconColor),
+                const SizedBox(width: 8),
+                Text(
+                  slot,
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: iconColor,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            ...slotEvents.map((event) => Card(
+              margin: const EdgeInsets.symmetric(vertical: 6),
+              color: backgroundColor,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(35)),
+              elevation: 3,
+              child: ListTile(
+                title: Text(event.title, style: TextStyle(
+                  fontSize: 18,
+                  color: Color(0xFF050505),
+                  fontWeight: FontWeight.w500,
+                ),
+                ),
+                subtitle: Text('🕒 ${event.time} 📍 ${event.location}',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF131515),
+
+                  ),
+                ),
+                onTap: () {
+                  _showEventDialog(
+                    selectedDate: event.day,
+                    event: {
+                      'id': event.id,
+                      'title': event.title,
+                      'location': event.location,
+                      'time': event.time,
+                    },
+                  );
+                },
+              ),
+            )),
+            const SizedBox(height: 12),
+          ],
+        );
+      }).toList(),
+    );
+  }
+
+  Map<String, List<Event>> groupEventsByTimeSlot(List<Event> events) {
+    Map<String, List<Event>> grouped = {
+      'Morning': [],
+      'Noon': [],
+      'Afternoon': [],
+      'Evening': [],
+    };
+
+    for (var event in events) {
+      final hour = int.tryParse(event.time.split(':')[0]) ?? 0;
+
+      if (hour >= 5 && hour < 11) {
+        grouped['Morning']!.add(event);
+      } else if (hour >= 11 && hour < 14) {
+        grouped['Noon']!.add(event);
+      } else if (hour >= 14 && hour < 18) {
+        grouped['Afternoon']!.add(event);
+      } else {
+        grouped['Evening']!.add(event);
+      }
+    }
+
+    return grouped..removeWhere((key, value) => value.isEmpty);
+  }
+
+  IconData _getIconForSlot(String slot) {
+    switch (slot) {
+      case 'Morning':
+        return Icons.wb_sunny;
+      case 'Noon':
+        return Icons.lunch_dining;
+      case 'Afternoon':
+        return Icons.wb_twilight;
+      case 'Evening':
+        return Icons.nightlight_round;
+      default:
+        return Icons.event;
+    }
+  }
+
+  Color _getIconColor(String slot) {
+    switch (slot) {
+      case 'Morning':
+        return Color(0xFFF4BC06);
+      case 'Noon':
+        return Color(0xFFF65423);
+      case 'Afternoon':
+        return Color(0xFF3B76F6);
+      case 'Evening':
+        return Color(0xFF7124F4);
+      default:
+        return Colors.grey;
+    }
+  }
+
+  Color _getBackgroudColor(String slot) {
+    switch (slot) {
+      case 'Morning':
+        return Color(0xFFF4E5AF);
+      case 'Noon':
+        return Color(0xFFF6B9A5);
+      case 'Afternoon':
+        return Color(0xFFB0C8F8);
+      case 'Evening':
+        return Color(0xFFD6C5F6);
+      default:
+        return Colors.grey;
+    }
+  }
+
 }
