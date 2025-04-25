@@ -1,12 +1,16 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:family/services/image_service.dart';
 import 'package:family/models/images.dart';
 import 'package:family/pages/image_details.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:family/models/users.dart';
 
 class GalleryPage extends StatefulWidget {
-  const GalleryPage({Key? key}) : super(key: key);
+  final UserModel user;
+  const GalleryPage({super.key, required this.user});
 
   @override
   State<GalleryPage> createState() => _GalleryPageState();
@@ -19,6 +23,14 @@ class _GalleryPageState extends State<GalleryPage> {
 
   String? selectedMonth;
   String? selectedYear;
+  late UserModel currentUser;
+
+  final ScrollController _scrollController = ScrollController();
+  bool _isLoadingMore = false;
+  bool _hasMore = true;
+  int _currentPage = 1;
+  final int _pageSize = 15;
+
 
   final List<String> months = List.generate(12, (index) => '${index + 1}');
   final List<String> years = List.generate(10, (index) => '${DateTime.now().year - index}');
@@ -26,19 +38,43 @@ class _GalleryPageState extends State<GalleryPage> {
   @override
   void initState() {
     super.initState();
-    _loadImages();
-  }
-
-  void _loadImages() {
-    _imagesFuture = ImageService.fetchImagesByFamilyCode('12345');
-    _imagesFuture.then((images) {
-      if (!mounted) return;
-      setState(() {
-        _allImages = images;
-        _filteredImages = images;
-      });
+    currentUser = widget.user;
+    _loadImages(refresh: true); // Bắt đầu bằng refresh để khởi tạo _allImages
+    _scrollController.addListener(() {
+      if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 100) {
+        _loadImages(); // Tải thêm ảnh khi gần chạm cuối
+      }
     });
   }
+
+  void _loadImages({bool refresh = false}) {
+    if (refresh) {
+      _currentPage = 1;
+      _hasMore = true;
+    }
+
+    if (!_hasMore || _isLoadingMore) return;
+
+    final familyCode = currentUser.familyCode;
+    if (familyCode == null) return;
+
+    _isLoadingMore = true;
+
+    ImageService.fetchImagesByFamilyCode(familyCode, page: _currentPage, pageSize: _pageSize).then((images) {
+      if (!mounted) return;
+      setState(() {
+        if (refresh) {
+          _allImages = images;
+        } else {
+          _allImages.addAll(images);
+        }
+        _filteredImages = List.from(_allImages); // reset filter nếu cần
+        if (images.length < _pageSize) _hasMore = false;
+        _currentPage++;
+      });
+    }).whenComplete(() => _isLoadingMore = false);
+  }
+
 
   void _applyFilters() {
     DateTime? startDate;
@@ -81,6 +117,7 @@ class _GalleryPageState extends State<GalleryPage> {
 
   final ImagePicker _picker = ImagePicker();
 
+
   void _showUploadDialog() {
     String description = '';
     XFile? selectedImage;
@@ -88,50 +125,120 @@ class _GalleryPageState extends State<GalleryPage> {
     showDialog(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          title: const Text('Upload Image'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ElevatedButton(
-                onPressed: () async {
-                  selectedImage = await _picker.pickImage(source: ImageSource.gallery);
-                },
-                child: const Text('Choose from Gallery'),
-              ),
-              TextField(
-                decoration: const InputDecoration(labelText: 'Description'),
-                onChanged: (value) => description = value,
-              ),
-            ],
+        return Dialog(
+          backgroundColor: Colors.white,
+          insetPadding: const EdgeInsets.all(16),
+          child: StatefulBuilder(
+            builder: (context, setState) {
+              return SizedBox(
+                width: double.infinity,
+                height: 400,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Header: nút Publish
+                    Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          ElevatedButton(
+                            onPressed: () async {
+                              if (selectedImage != null) {
+                                Navigator.pop(context);
+                                await _uploadImageToImgurAndFirestore(
+                                    selectedImage!, description);
+                              }
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Color(0xFF329B80),
+                              foregroundColor: Colors.white,
+                            ),
+                            child: const Text('Share'),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Vùng nhập mô tả
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: TextField(
+                          maxLines: null,
+                          expands: true,
+                          decoration: const InputDecoration(
+                            hintText: 'What are you thinking?',
+                            border: InputBorder.none,
+                          ),
+                          onChanged: (value) => description = value,
+                        ),
+                      ),
+                    ),
+
+                    // Hiển thị ảnh nếu có chọn
+                    if (selectedImage != null)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Container(
+                          margin: const EdgeInsets.only(top: 10),
+                          height: 120,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(10),
+                            image: DecorationImage(
+                              image: FileImage(File(selectedImage!.path)),
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                        ),
+                      ),
+
+                    const SizedBox(height: 12),
+
+                    // Nút chọn ảnh từ thư viện
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: ElevatedButton.icon(
+                        onPressed: () async {
+                          final image = await _picker.pickImage(source: ImageSource.gallery);
+                          if (image != null) {
+                            setState(() => selectedImage = image);
+                          }
+                        },
+                        icon: const Icon(Icons.photo_library),
+                        label: const Text('Choose from Gallery'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Color(0xFFA57BE4),
+                          foregroundColor: Colors.white,
+                          minimumSize: const Size.fromHeight(40),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 16),
+                  ],
+                ),
+              );
+            },
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                if (selectedImage != null) {
-                  Navigator.pop(context);
-                  await _uploadImageToImgurAndFirestore(selectedImage!, description);
-                }
-              },
-              child: const Text('Upload'),
-            ),
-          ],
         );
       },
     );
   }
+
+
+
+
   Future<void> _uploadImageToImgurAndFirestore(XFile image, String description) async {
     try {
       final bytes = await image.readAsBytes();
+      final familyCode = currentUser.familyCode;
+      final uploadedBy = currentUser.email;
       await ImageService.uploadImageAndSaveToFirestore(
         imageBytes: bytes,
         description: description,
-        uploadedBy: "thaonguyen68161@gmail.com",
-        familyCode: "12345",
+        uploadedBy: uploadedBy,
+        familyCode: familyCode,
       );
       if (!mounted) return;
       _loadImages(); // Load lại ảnh sau khi upload
@@ -143,22 +250,10 @@ class _GalleryPageState extends State<GalleryPage> {
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: FutureBuilder<List<ImageModel>>(
-        future: _imagesFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          if (snapshot.hasError) {
-            return const Center(child: Text('Error loading images.'));
-          }
-
-          return Column(
+      body: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Padding(
@@ -250,69 +345,73 @@ class _GalleryPageState extends State<GalleryPage> {
                 ),
               ),
               Expanded(
-                child: _filteredImages.isEmpty
+                child: RefreshIndicator(
+                          onRefresh: () async {
+                          _loadImages(refresh: true);
+                            },
+                  child: _filteredImages.isEmpty
                     ? const Center(child: Text('No images shared yet.'))
                     : GridView.builder(
-                  padding: const EdgeInsets.all(12),
-                  itemCount: _filteredImages.length,
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    mainAxisSpacing: 12,
-                    crossAxisSpacing: 12,
-                    childAspectRatio: 3 / 4,
-                  ),
-                  itemBuilder: (context, index) {
-                    final image = _filteredImages[index];
-                    return ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => ImageDetailsPage(image: image),
+                    controller: _scrollController,
+                    padding: const EdgeInsets.all(12),
+                    itemCount: _filteredImages.length + (_hasMore ? 1 : 0),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 3,
+                      mainAxisSpacing: 8,
+                      crossAxisSpacing: 8,
+                      childAspectRatio: 1,
+                    ),
+                    itemBuilder: (context, index) {
+                      if (index >= _filteredImages.length) {
+                        // Hiển thị loading ở cuối nếu còn ảnh để tải
+                        return const Center(child: CircularProgressIndicator());
+                      }
+
+                      final image = _filteredImages[index];
+                      return ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ImageDetailsPage(image: image),
+                              ),
+                            );
+                          },
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.network(
+                              image.imageURL,
+                              fit: BoxFit.cover,
                             ),
-                          );
-                        },
-                        child: GridTile(
-                          footer: Container(
-                            color: Colors.black54,
-                            padding: const EdgeInsets.all(6),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  image.description,
-                                  style: const TextStyle(color: Colors.white, fontSize: 12),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                Text(
-                                  'By: ${image.uploadedBy}',
-                                  style: const TextStyle(color: Colors.white70, fontSize: 10),
-                                ),
-                              ],
-                            ),
-                          ),
-                          child: Image.network(
-                            image.imageURL,
-                            fit: BoxFit.cover,
                           ),
                         ),
-                      ),
-                    );
-                  },
-                ),
+                      );
+                    },
+                  ),
+              )
               ),
             ],
-          );
-        },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showUploadDialog,
-        child: const Icon(Icons.add, size: 35, color: Colors.green,),
       ),
 
+      floatingActionButton: Container(
+        height: 56,
+        width: 56,
+        decoration: BoxDecoration(
+          color: Color(0xFF329B80),
+          borderRadius: BorderRadius.circular(40),
+        ),
+        child: FloatingActionButton(
+          onPressed: _showUploadDialog,
+          backgroundColor: Color(0xFF329B80),
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(40),
+          ),
+          child: const Icon(Icons.add, size: 40, color: Colors.white),
+        ),
+      ),
     );
   }
 }
