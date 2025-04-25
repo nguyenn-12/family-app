@@ -27,7 +27,7 @@ class _MainScreenState extends State<MainScreen> {
   void initState() {
     super.initState();
     _pages = [
-      CalendarPage(),
+      CalendarPage(user: widget.user),
       GalleryPage(),
       ChatPage(),
       ProfilePage(user: widget.user),
