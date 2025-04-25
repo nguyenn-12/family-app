@@ -1,9 +1,11 @@
-import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-import 'package:image_picker/image_picker.dart';
+import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
+import 'package:http/http.dart' as http;
 import 'package:family/models/users.dart';
-
+import 'package:family/services/user_service.dart';
 
 class EditProfilePage extends StatefulWidget {
   final UserModel user;
@@ -14,43 +16,111 @@ class EditProfilePage extends StatefulWidget {
 }
 
 class _EditProfilePageState extends State<EditProfilePage> {
-  late TextEditingController emailController;
+  late UserModel currentUser;
   late TextEditingController nameController;
+  late TextEditingController emailController;
   late TextEditingController dobController;
   late TextEditingController passController;
-  String selectedGender = "";
-  File? _avatarFile;
 
   @override
   void initState() {
     super.initState();
-    emailController = TextEditingController(text: widget.user.email);
-    nameController = TextEditingController(text: widget.user.name);
-    dobController = TextEditingController(text: DateFormat('yyyy-MM-dd').format(widget.user.dob));
-    passController = TextEditingController(text: widget.user.pass);
-    selectedGender = widget.user.gender;
+    currentUser = widget.user;
+    nameController = TextEditingController(text: currentUser.name);
+    emailController = TextEditingController(text: currentUser.email);
+    dobController = TextEditingController(text: DateFormat('yyyy-MM-dd').format(currentUser.dob));
+    passController = TextEditingController(text: currentUser.pass);
   }
 
-  Future<void> pickImage() async {
+  Future<void> _pickImageAndUpload() async {
     final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
-    if (pickedFile != null) {
-      setState(() {
-        _avatarFile = File(pickedFile.path);
-      });
+    if (pickedFile == null) return;
+
+    try {
+      final bytes = await pickedFile.readAsBytes();
+      final base64Image = base64Encode(bytes);
+      final response = await http.post(
+        Uri.parse("https://api.imgur.com/3/image"),
+        headers: {"Authorization": "Client-ID 4a47796c6fc8864"},
+        body: {"image": base64Image},
+      );
+
+      final data = jsonDecode(response.body);
+      if (response.statusCode == 200 && data['success']) {
+        final uploadedUrl = data['data']['link'];
+        setState(() {
+          currentUser = currentUser.copyWith(avatar: uploadedUrl);
+        });
+      } else {
+        throw Exception("Imgur upload failed: ${data['data']['error']}");
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Image upload failed. Please try again.")),
+      );
     }
+  }
+
+  Future<void> _handleSaveProfile() async {
+    final updatedUser = currentUser.copyWith(
+      name: nameController.text,
+      pass: passController.text,
+      dob: DateFormat('yyyy-MM-dd').parse(dobController.text),
+    );
+
+    try {
+      await UserService.updateUser(updatedUser);
+      if (!mounted) return;
+
+      await _showDialog(
+        title: "Notice",
+        message: "Update your information successfully!",
+        icon: const Icon(Icons.verified, color: Color(0xFF00C6A2), size: 40),
+      );
+
+      Navigator.pop(context, updatedUser);
+    } catch (e) {
+      if (!mounted) return;
+      await _showDialog(
+        title: "Notice",
+        message: "Update failed, please try again.",
+        icon: const Icon(Icons.error_outline, color: Colors.redAccent, size: 40),
+      );
+    }
+  }
+
+  Future<void> _showDialog({required String title, required String message, required Widget icon}) {
+    return showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        backgroundColor: Colors.white,
+        contentPadding: const EdgeInsets.all(24),
+        title: Row(children: [icon, const SizedBox(width: 10), Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18))]),
+        content: Text(message, style: const TextStyle(fontSize: 16, color: Colors.black54)),
+        actions: [
+          Center(
+            child: ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF00C6A2),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 10),
+              ),
+              child: const Text("OK", style: TextStyle(color: Colors.white)),
+            ),
+          )
+        ],
+        actionsAlignment: MainAxisAlignment.center,
+      ),
+    );
   }
 
   InputDecoration _roundedInput(String label) => InputDecoration(
     labelText: label,
     floatingLabelStyle: const TextStyle(color: Color(0xFF007B8F)),
-    border: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(12),
-      borderSide: const BorderSide(color: Color(0xFF007B8F)),
-    ),
-    focusedBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(12),
-      borderSide: const BorderSide(color: Color(0xFF00C6A2), width: 2),
-    ),
+    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF007B8F))),
+    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF00C6A2), width: 2)),
     contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
   );
 
@@ -60,29 +130,13 @@ class _EditProfilePageState extends State<EditProfilePage> {
       backgroundColor: const Color(0xfffdf8fd),
       appBar: AppBar(
         centerTitle: true,
-        title: const Text('Edit Profile', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        title: const Text('Edit Profile', style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold, color: Colors.white)),
+        backgroundColor: Color(0xFFA580D8),
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.check, color: Colors.green),
-            onPressed: () {
-              Navigator.pop(context, {
-                'email': emailController.text,
-                'name': nameController.text,
-                'dob': dobController.text,
-                'pass': passController.text,
-                'avatar': _avatarFile?.path ?? widget.user.avatar,
-                'gender': selectedGender,
-              });
-            },
-          )
-        ],
       ),
       body: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
@@ -93,24 +147,14 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 CircleAvatar(
                   radius: 48,
                   backgroundColor: Colors.white,
-                  child: _avatarFile != null
-                      ? CircleAvatar(
-                    radius: 48,
-                    backgroundImage: FileImage(_avatarFile!),
-                  )
-                      : (widget.user.avatar.isNotEmpty
-                      ? CircleAvatar(
-                    radius: 48,
-                    backgroundColor: Colors.white,
-                    backgroundImage: NetworkImage(widget.user.avatar),
-                  )
-                      : const Icon(Icons.person, size: 48, color: Color(0xFF007B8F))),
+                  backgroundImage: currentUser.avatar.isNotEmpty ? NetworkImage(currentUser.avatar) : null,
+                  child: currentUser.avatar.isEmpty ? const Icon(Icons.person, size: 48, color: Color(0xFF007B8F)) : null,
                 ),
                 Positioned(
                   bottom: 0,
                   right: 0,
                   child: GestureDetector(
-                    onTap: pickImage,
+                    onTap: _pickImageAndUpload,
                     child: Container(
                       padding: const EdgeInsets.all(4),
                       decoration: BoxDecoration(
@@ -126,15 +170,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
             ),
           ),
           const SizedBox(height: 32),
-          TextField(
-            controller: nameController,
-            decoration: _roundedInput("Name"),
-          ),
+          TextField(controller: nameController, decoration: _roundedInput("Name")),
           const SizedBox(height: 20),
-          TextField(
-            controller: emailController,
-            decoration: _roundedInput("Email address"),
-          ),
+          TextField(controller: emailController, enabled: false, style: const TextStyle(color: Colors.black54), decoration: _roundedInput("Email address")),
           const SizedBox(height: 20),
           TextField(
             controller: dobController,
@@ -144,7 +182,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
               FocusScope.of(context).requestFocus(FocusNode());
               final DateTime? picked = await showDatePicker(
                 context: context,
-                initialDate: widget.user.dob,
+                initialDate: currentUser.dob,
                 firstDate: DateTime(1900),
                 lastDate: DateTime.now(),
               );
@@ -154,28 +192,36 @@ class _EditProfilePageState extends State<EditProfilePage> {
             },
           ),
           const SizedBox(height: 20),
-          TextField(
-            controller: passController,
-            obscureText: true,
-            decoration: _roundedInput("Password"),
-          ),
+          TextField(controller: passController, obscureText: true, decoration: _roundedInput("Password")),
           const SizedBox(height: 20),
           DropdownButtonFormField<String>(
-            value: selectedGender,
+            value: currentUser.gender,
             decoration: _roundedInput("Gender"),
-            items: ["Male", "Female", "Other"].map((gender) {
-              return DropdownMenuItem(
-                value: gender,
-                child: Text(gender),
-              );
-            }).toList(),
+            items: ["Male", "Female", "Other"].map((gender) => DropdownMenuItem(value: gender, child: Text(gender))).toList(),
             onChanged: (value) {
               if (value != null) {
                 setState(() {
-                  selectedGender = value;
+                  currentUser = currentUser.copyWith(gender: value);
                 });
               }
             },
+          ),
+          const SizedBox(height: 40),
+          Center(
+            child: SizedBox(
+              width: 130,
+              height: 50,
+              child: ElevatedButton(
+                onPressed: _handleSaveProfile,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF00C6A2),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                ),
+                child: const Text('Save', style: TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold)),
+              ),
+            ),
           ),
         ],
       ),
