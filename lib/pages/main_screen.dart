@@ -29,7 +29,13 @@ class _MainScreenState extends State<MainScreen> {
     _pages = [
       CalendarPage(),
       GalleryPage(),
-      ChatPage(),
+      ChatPage(
+        user: widget.user,
+        onGoToProfile: () {
+          setState(() {
+            _currentIndex = 3; // hoặc tab Profile
+          });
+        },),
       ProfilePage(user: widget.user),
       EditProfilePage(user:widget.user)
     ];
@@ -38,7 +44,7 @@ class _MainScreenState extends State<MainScreen> {
   final List<String> _titles = [
     'Calendar ',
     'Gallery',
-    'Chat',
+    'Chatting Room',
     'Profile',
     'Edit Profile'
   ];

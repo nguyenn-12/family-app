@@ -1,5 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../models/family.dart';
+import '../models/families.dart';
 
 class FamilyService {
   static final _familyRef = FirebaseFirestore.instance.collection('families');

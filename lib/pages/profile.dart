@@ -8,7 +8,7 @@ import 'package:family/models/users.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:family/services/family_service.dart';
 import 'package:family/services/user_service.dart';
-import 'package:family/models/family.dart';
+import 'package:family/models/families.dart';
 
 class ProfilePage extends StatefulWidget {
   final UserModel user;
@@ -98,7 +98,16 @@ class _ProfilePageState extends State<ProfilePage> {
           actionsAlignment: MainAxisAlignment.center,
           actions: [
             ElevatedButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: () async {
+                Navigator.pop(context); // đóng dialog
+                // Gọi API để lấy lại thông tin user sau khi cập nhật
+                final updatedUser = await UserService.fetchUser(currentUser.email);
+                setState(() {
+                  if (updatedUser != null) {
+                  currentUser = updatedUser;}
+                });
+              },
+
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF00C6A2),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
