@@ -12,6 +12,7 @@ import 'package:family/services/user_service.dart';
 import 'package:family/providers/user_provider.dart';
 import 'package:family/pages/signin.dart';
 
+
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
 
