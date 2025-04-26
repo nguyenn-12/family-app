@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+
 import 'package:family/models/events.dart';
 import 'package:family/services/event_service.dart';
-import 'package:family/services/user_service.dart';
-import 'package:family/models/users.dart';
-import 'package:provider/provider.dart';
 import 'package:family/providers/user_provider.dart';
 
 class CalendarPage extends StatefulWidget {
