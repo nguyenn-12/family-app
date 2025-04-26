@@ -1,13 +1,11 @@
 import 'dart:io';
-
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+
 import 'package:family/services/image_service.dart';
 import 'package:family/models/images.dart';
 import 'package:family/pages/image_details.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:family/models/users.dart';
-import 'package:provider/provider.dart';
 import 'package:family/providers/user_provider.dart';
 
 class GalleryPage extends StatefulWidget {

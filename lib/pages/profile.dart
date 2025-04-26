@@ -11,6 +11,7 @@ import 'package:family/services/family_service.dart';
 import 'package:family/services/user_service.dart';
 import 'package:family/providers/user_provider.dart';
 import 'package:family/pages/signin.dart';
+import 'package:family/pages/notification.dart';
 
 
 class ProfilePage extends StatefulWidget {
@@ -456,7 +457,17 @@ class _ProfilePageState extends State<ProfilePage> with WidgetsBindingObserver {
                 ],
               ),
             ),
-            const Icon(Icons.notifications_none, color: Colors.white, size: 30),
+            //const Icon(Icons.notifications_none, color: Colors.white, size: 30),
+            IconButton(
+              icon: Icon(Icons.notifications_none, color: Colors.white, size: 30),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => NotificationPage()),
+                );
+              },
+            ),
+
           ],
         )
     );
