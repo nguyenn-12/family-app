@@ -6,6 +6,8 @@ import 'package:provider/provider.dart';
 
 import 'package:family/models/notifications.dart';
 import 'package:family/services/notification_service.dart';
+import 'package:family/services/user_service.dart';
+import 'package:family/services/family_service.dart';
 
 class NotificationPage extends StatefulWidget {
   @override
@@ -17,6 +19,8 @@ class _NotificationPageState extends State<NotificationPage> {
   final NotificationService _notificationService = NotificationService();
   late List<NotificationModel> notifications = [];
   late final currentUser;
+  bool isLoaded = false;
+
 
   @override
   void initState() {
@@ -31,9 +35,14 @@ class _NotificationPageState extends State<NotificationPage> {
     }
   }
 
-  void _fetchNotifications() {
+  void _fetchNotifications() async {
     if (currentUser != null) {
-      _notificationsFuture = _notificationService.fetchNotificationsByReceiver(currentUser.email!);
+     // _notificationsFuture = _notificationService.fetchNotificationsByReceiver(currentUser.email!);
+      final newNotifications = await _notificationService.fetchNotificationsByReceiver(currentUser.email!);
+      setState(() {
+        notifications = newNotifications;
+        _notificationsFuture = Future.value(newNotifications);
+      });
     }
   }
 
@@ -72,78 +81,217 @@ class _NotificationPageState extends State<NotificationPage> {
     }
   }
 
+
   void _showUserDialog(NotificationModel notif, String senderName, String senderAvatar) {
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        title: Text(senderName),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CircleAvatar(
-              radius: 40,
-              backgroundImage: NetworkImage(senderAvatar),
-            ),
-            SizedBox(height: 16),
-            Text(notif.content),
-          ],
+      builder: (_) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Container(
+          width: MediaQuery.of(context).size.width * 0.8, // to hơn
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white, // background trắng
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                notif.type == 'NewMember' ? 'Add new member' : 'Happy Birthday',
+                style: TextStyle(
+                  fontSize: 25,
+                  fontWeight: FontWeight.bold,
+
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircleAvatar(
+                    radius: 35,
+                    backgroundImage: NetworkImage(senderAvatar),
+                  ),
+                  const SizedBox(width: 16),
+                  Text(
+                    senderName,
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              Text(
+                '" ${notif.content} "',
+                style: TextStyle(fontSize: 16),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 30),
+              if (notif.type == 'NewMember') ...[
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    ElevatedButton(
+                      onPressed: () async {
+                        final senderUser = await UserService.getUserByEmail(notif.sender);
+
+                        if (senderUser != null) {
+                          // Bỏ chữ pending_ ra để lấy familyCode thật
+                          String pendingCode = senderUser.familyCode;
+                          String realFamilyCode = pendingCode.replaceFirst('pending_', '');
+
+                          await UserService.updateFamilyCode(senderUser.id, realFamilyCode);
+                          await FamilyService.updateMemberCount(realFamilyCode, 1);
+
+                          // Xóa notification
+                          await NotificationService.deleteNotification(notif.id);
+                          setState(() {
+                            notifications.removeWhere((n) => n.id == notif.id);
+                          });
+                        }
+                        Navigator.pop(context);
+
+
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Color(0xFF63BC66),
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                      child: Text('Accept',
+                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.white)
+                      ),
+                    ),
+                    const SizedBox(width: 20),
+                    ElevatedButton(
+                      onPressed: () async {
+                        // TODO: Xử lý Reject
+                        final senderUser = await UserService.getUserByEmail(notif.sender);
+
+                        if (senderUser != null) {
+                          // Xóa familyCode
+                          await UserService.updateFamilyCode(senderUser.id, '');
+
+                          // Xóa notification
+                          await NotificationService.deleteNotification(notif.id);
+                          setState(() {
+                            notifications.removeWhere((n) => n.id == notif.id);
+                          });
+                        }
+                        Navigator.pop(context);
+
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Color(0xFFDA4A4A),
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                      child: Text('Reject',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white)
+                      ),
+                    ),
+                  ],
+                )
+              ] else ...[
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Color(0xFF019F92),
+                    padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                  child: Text('Close',
+                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.white)
+                  ),
+                ),
+              ],
+            ],
+          ),
         ),
-        actions: notif.type == 'NewMember'
-            ? [
-          TextButton(
-            onPressed: () {
-              // TODO: Xử lý Accept
-              Navigator.pop(context);
-            },
-            child: Text('Accept'),
-          ),
-          TextButton(
-            onPressed: () {
-              // TODO: Xử lý Reject
-              Navigator.pop(context);
-            },
-            child: Text('Reject'),
-          ),
-        ]
-            : [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Close'),
-          ),
-        ],
       ),
     );
   }
 
+
   void _showEventDialog(NotificationModel notif) {
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        title: Text('Event'),
-        content: Text(notif.content),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Close'),
+      builder: (_) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Container(
+          width: MediaQuery.of(context).size.width * 0.8,
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
           ),
-        ],
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'New Event',
+                style: TextStyle(
+                  fontSize: 25,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 20),
+              Text(
+                '" ${notif.content} "',
+                style: TextStyle(fontSize: 16),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 30),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Color(0xFF019F92),
+                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                child: Text('Close',
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.white)
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
+
 
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(60),
+        preferredSize: const Size.fromHeight(50),
         child: AppBar(
           centerTitle: true,
           title: const Text(
             'Notifications',
             style: const TextStyle(fontSize: 30, fontWeight: FontWeight.bold, color: Colors.white),
           ),
-          backgroundColor: const Color(0xFFA87CEC),
+          //backgroundColor: const Color(0xFFA87CEC),
+          flexibleSpace: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Color(0xFF00C6A2),
+                  Color(0xFF007B8F),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+          ),
         ),
       ),
       backgroundColor: Colors.white,
@@ -158,6 +306,10 @@ class _NotificationPageState extends State<NotificationPage> {
           }
           if (!snapshot.hasData || snapshot.data!.isEmpty) {
             return Center(child: Text('There are no notification'));
+          }
+          if (!isLoaded) {
+            notifications = snapshot.data!;
+            isLoaded = true;
           }
 
           //List<NotificationModel> notifications = snapshot.data!;

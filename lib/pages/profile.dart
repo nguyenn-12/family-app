@@ -12,6 +12,8 @@ import 'package:family/services/user_service.dart';
 import 'package:family/providers/user_provider.dart';
 import 'package:family/pages/signin.dart';
 import 'package:family/pages/notification.dart';
+import 'package:family/services/notification_service.dart';
+import 'package:family/models/notifications.dart';
 
 
 class ProfilePage extends StatefulWidget {
@@ -26,6 +28,9 @@ class _ProfilePageState extends State<ProfilePage> with WidgetsBindingObserver {
   FamilyModel? createdFamily;
   final TextEditingController _familyCodeController = TextEditingController();
   final GlobalKey avatarKey = GlobalKey();
+  final NotificationService _notificationService = NotificationService();
+  bool hasUnreadNotification = false;
+
 
   @override
   void initState() {
@@ -38,6 +43,7 @@ class _ProfilePageState extends State<ProfilePage> with WidgetsBindingObserver {
         await _loadFamilyMembers(user.familyCode);
       }
     });
+    _checkUnreadNotifications();
   }
 
   @override
@@ -141,12 +147,43 @@ class _ProfilePageState extends State<ProfilePage> with WidgetsBindingObserver {
     final code = _familyCodeController.text.trim();
     if (code.isEmpty) return;
 
-    final exists = await FamilyService.getFamilyById(code);
-    if (exists == null) return;
+    // final exists = await FamilyService.getFamilyById(code);
+    // if (exists == null) return;
 
-    await UserService.updateFamilyCode(user.id, code);
-    await FamilyService.updateMemberCount(code, 1);
+    final family = await FamilyService.getFamilyById(code);
+    if (family == null) return;
+
+    //await UserService.updateFamilyCode(user.id, code);
+    //await FamilyService.updateMemberCount(code, 1);
+    //await _refreshUser();
+
+    // Update user's familyCode với prefix "pending_"
+    await UserService.updateFamilyCode(user.id, 'pending_$code');
+
+    // Lấy thông tin chủ gia đình
+    final ownerId = family.createdBy;
+    final ownerUser = await UserService.getUserById(ownerId);
+    if (ownerUser == null) return;
+
+    final receiverEmail = ownerUser.email;
+    final senderEmail = user.email;
+
+    // Step 3: Tạo notification
+    final notification = NotificationModel(
+      id: '', // Firestore sẽ tự tạo ID
+      receiver: receiverEmail,
+      sender: senderEmail,
+      content: 'I want to join your family',
+      type: 'NewMember',
+      status: 0,
+      time: DateTime.now(),
+    );
+
+    // Step 4: Lưu notification vào Firestore
+    await NotificationService.addNotification(notification);
+
     await _refreshUser();
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -252,6 +289,18 @@ class _ProfilePageState extends State<ProfilePage> with WidgetsBindingObserver {
         actionsAlignment: MainAxisAlignment.center,
       ),
     );
+  }
+
+  void _checkUnreadNotifications() async {
+    final provider = Provider.of<UserProvider>(context, listen: false);
+    final currentUser = provider.user;
+
+    if (currentUser != null) {
+      final notifications = await _notificationService.fetchNotificationsByReceiver(currentUser.email!);
+      setState(() {
+        hasUnreadNotification = notifications.any((notif) => notif.status == 0);
+      });
+    }
   }
 
   void _showInfoDialog(String message, String code) {
@@ -457,16 +506,35 @@ class _ProfilePageState extends State<ProfilePage> with WidgetsBindingObserver {
                 ],
               ),
             ),
-            //const Icon(Icons.notifications_none, color: Colors.white, size: 30),
-            IconButton(
-              icon: Icon(Icons.notifications_none, color: Colors.white, size: 30),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => NotificationPage()),
-                );
-              },
-            ),
+            Stack(
+              children: [
+                IconButton(
+                  icon: Icon(Icons.notifications_none, color: Colors.white, size: 35),
+                  onPressed: () async {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => NotificationPage()),
+                    );
+                    _checkUnreadNotifications(); // Check lại sau khi từ NotificationPage quay về
+                    _loadFamilyMembers(user.familyCode);
+                  },
+                ),
+                if (hasUnreadNotification)
+                  Positioned(
+                    right: 8,
+                    top: 8,
+                    child: Container(
+                      width: 10,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ),
+              ],
+            )
+
 
           ],
         )

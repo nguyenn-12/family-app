@@ -29,14 +29,13 @@ class _CalendarPageState extends State<CalendarPage> {
   @override
   void initState() {
     super.initState();
-    //currentUser = widget.user;
+
     _selectedDay = _focusedDay;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final provider = Provider.of<UserProvider>(context, listen: false);
       currentUser = provider.user;
       _loadEventsFromFirestore();
     });
-    //_loadEventsFromFirestore();
 
   }
 

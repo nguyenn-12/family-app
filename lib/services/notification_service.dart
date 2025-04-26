@@ -3,6 +3,7 @@ import 'package:family/models/notifications.dart';
 
 class NotificationService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  static final CollectionReference notificationCollection = FirebaseFirestore.instance.collection('notifications');
 
   // Fetch các thông báo theo email người nhận
   Future<List<NotificationModel>> fetchNotificationsByReceiver(String receiverEmail) async {
@@ -35,5 +36,30 @@ class NotificationService {
     }
   }
 
+  static Future<void> addNotification(NotificationModel notification) async {
+    try {
+      await notificationCollection.add({
+        'receiver': notification.receiver,
+        'sender': notification.sender,
+        'content': notification.content,
+        'type': notification.type,
+        'status': notification.status,
+        'time': notification.time,
+      });
+    } catch (e) {
+      print('Error adding notification: $e');
+    }
+  }
+
+  static Future<void> deleteNotification(String notificationId) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('notifications')
+          .doc(notificationId)
+          .delete();
+    } catch (e) {
+      print('Error deleting notification: $e');
+    }
+  }
 
 }
