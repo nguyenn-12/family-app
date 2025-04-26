@@ -3,6 +3,7 @@ import 'package:family/services/mail_service.dart';
 import 'package:family/services/user_service.dart';
 import 'package:family/models/users.dart';
 import 'main_screen.dart';
+import '/pages/signin.dart';
 
 class OtpVerification extends StatefulWidget {
   final String email;
@@ -57,7 +58,7 @@ class _OtpVerificationState extends State<OtpVerification> {
 
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => MainScreen(user: user),),
+        MaterialPageRoute(builder: (_) => const SignIn()),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
