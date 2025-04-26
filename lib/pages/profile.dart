@@ -11,6 +11,7 @@ import 'package:family/services/family_service.dart';
 import 'package:family/services/user_service.dart';
 import 'package:family/providers/user_provider.dart';
 import 'package:family/pages/signin.dart';
+import 'package:family/pages/notification.dart';
 
 
 class ProfilePage extends StatefulWidget {
@@ -396,7 +397,7 @@ class _ProfilePageState extends State<ProfilePage> with WidgetsBindingObserver {
   Widget _buildHeader(UserModel user) {
     return Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 30),
+        padding: const EdgeInsets.fromLTRB(24, 45, 24, 30),
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             colors: [Color(0xFF00C6A2), Color(0xFF007B8F)],
@@ -456,7 +457,17 @@ class _ProfilePageState extends State<ProfilePage> with WidgetsBindingObserver {
                 ],
               ),
             ),
-            const Icon(Icons.notifications_none, color: Colors.white, size: 30),
+            //const Icon(Icons.notifications_none, color: Colors.white, size: 30),
+            IconButton(
+              icon: Icon(Icons.notifications_none, color: Colors.white, size: 30),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => NotificationPage()),
+                );
+              },
+            ),
+
           ],
         )
     );

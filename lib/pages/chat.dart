@@ -118,10 +118,11 @@ class _ChatPageState extends State<ChatPage> {
 
   @override
   Widget build(BuildContext context) {
-    final currentUser = Provider.of<UserProvider>(context).user;
-    if (currentUser == null) {
+    final user = Provider.of<UserProvider>(context).user;
+    if (user == null) {
       return const Center(child: CircularProgressIndicator());
     }
+    currentUser = user;
     // Nếu chưa có gia đình
     if (currentUser.familyCode.isEmpty) {
       return Center(
