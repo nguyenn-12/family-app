@@ -13,14 +13,26 @@ class ImageDetailsPage extends StatelessWidget {
 
     return Scaffold(
       appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(60),
+        preferredSize: const Size.fromHeight(50),
         child: AppBar(
           centerTitle: true,
           title: const Text(
             'Image Details',
             style: const TextStyle(fontSize: 30, fontWeight: FontWeight.bold, color: Colors.white),
           ),
-          backgroundColor: const Color(0xFFA87CEC),
+          //backgroundColor: const Color(0xFFA87CEC),
+          flexibleSpace: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Color(0xFF00C6A2),
+                  Color(0xFF007B8F),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+          ),
         ),
       ),
       body: Column(
