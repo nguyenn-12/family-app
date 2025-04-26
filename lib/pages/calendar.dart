@@ -5,11 +5,12 @@ import 'package:family/models/events.dart';
 import 'package:family/services/event_service.dart';
 import 'package:family/services/user_service.dart';
 import 'package:family/models/users.dart';
-
+import 'package:provider/provider.dart';
+import 'package:family/providers/user_provider.dart';
 
 class CalendarPage extends StatefulWidget {
-  final UserModel user;
-  const CalendarPage({super.key, required this.user});
+  //final UserModel user;
+  const CalendarPage({super.key});
 
   @override
   _CalendarPageState createState() => _CalendarPageState();
@@ -20,7 +21,8 @@ class _CalendarPageState extends State<CalendarPage> {
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
   Map<DateTime, List<Event>> _firestoreEvents = {};
-  late UserModel currentUser;
+  //late UserModel currentUser;
+  late final currentUser;
 
   List<Event> _getEventsForDay(DateTime day) {
     return _firestoreEvents[DateTime(day.year, day.month, day.day)] ?? [];
@@ -29,9 +31,14 @@ class _CalendarPageState extends State<CalendarPage> {
   @override
   void initState() {
     super.initState();
-    currentUser = widget.user;
+    //currentUser = widget.user;
     _selectedDay = _focusedDay;
-    _loadEventsFromFirestore();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final provider = Provider.of<UserProvider>(context, listen: false);
+      currentUser = provider.user;
+      _loadEventsFromFirestore();
+    });
+    //_loadEventsFromFirestore();
 
   }
 

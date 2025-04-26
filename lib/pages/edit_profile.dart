@@ -6,30 +6,42 @@ import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 import 'package:family/models/users.dart';
 import 'package:family/services/user_service.dart';
+import 'package:provider/provider.dart';
+import 'package:family/providers/user_provider.dart';
+
 
 class EditProfilePage extends StatefulWidget {
-  final UserModel user;
-  const EditProfilePage({super.key, required this.user});
+  const EditProfilePage({super.key});
 
   @override
   State<EditProfilePage> createState() => _EditProfilePageState();
 }
 
 class _EditProfilePageState extends State<EditProfilePage> {
-  late UserModel currentUser;
   late TextEditingController nameController;
   late TextEditingController emailController;
   late TextEditingController dobController;
   late TextEditingController passController;
+  late UserModel currentUser;
 
   @override
   void initState() {
     super.initState();
-    currentUser = widget.user;
-    nameController = TextEditingController(text: currentUser.name);
-    emailController = TextEditingController(text: currentUser.email);
-    dobController = TextEditingController(text: DateFormat('yyyy-MM-dd').format(currentUser.dob));
-    passController = TextEditingController(text: currentUser.pass);
+    final user = Provider.of<UserProvider>(context, listen: false).user!;
+    currentUser = user;
+    nameController = TextEditingController(text: user.name);
+    emailController = TextEditingController(text: user.email);
+    dobController = TextEditingController(text: DateFormat('yyyy-MM-dd').format(user.dob));
+    passController = TextEditingController(text: user.pass);
+  }
+
+  @override
+  void dispose() {
+    nameController.dispose();
+    emailController.dispose();
+    dobController.dispose();
+    passController.dispose();
+    super.dispose();
   }
 
   Future<void> _pickImageAndUpload() async {
@@ -70,7 +82,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
     try {
       await UserService.updateUser(updatedUser);
+      Provider.of<UserProvider>(context, listen: false).setUser(updatedUser);
+
       if (!mounted) return;
+
 
       await _showDialog(
         title: "Notice",
@@ -144,11 +159,20 @@ class _EditProfilePageState extends State<EditProfilePage> {
           Center(
             child: Stack(
               children: [
-                CircleAvatar(
-                  radius: 48,
-                  backgroundColor: Colors.white,
-                  backgroundImage: currentUser.avatar.isNotEmpty ? NetworkImage(currentUser.avatar) : null,
-                  child: currentUser.avatar.isEmpty ? const Icon(Icons.person, size: 48, color: Color(0xFF007B8F)) : null,
+                Container(
+                  padding: const EdgeInsets.all(1), // Độ dày của viền
+                  decoration: BoxDecoration(
+                    color: Color(0xFF007B8F), // Màu viền
+                    shape: BoxShape.circle,
+                  ),
+                  child: CircleAvatar(
+                    radius: 48,
+                    backgroundColor: Colors.white,
+                    backgroundImage: currentUser.avatar.isNotEmpty ? NetworkImage(currentUser.avatar) : null,
+                    child: currentUser.avatar.isEmpty
+                        ? const Icon(Icons.person, size: 48, color: Color(0xFF007B8F))
+                        : null,
+                  ),
                 ),
                 Positioned(
                   bottom: 0,
@@ -172,7 +196,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
           const SizedBox(height: 32),
           TextField(controller: nameController, decoration: _roundedInput("Name")),
           const SizedBox(height: 20),
-          TextField(controller: emailController, enabled: false, style: const TextStyle(color: Colors.black54), decoration: _roundedInput("Email address")),
+          TextField(controller: emailController, enabled: false, style: const TextStyle(color: Colors.black54), decoration: _roundedInput("Email address", )),
           const SizedBox(height: 20),
           TextField(
             controller: dobController,

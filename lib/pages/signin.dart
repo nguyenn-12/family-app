@@ -7,6 +7,9 @@ import 'package:family/services/mail_service.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:family/models/users.dart';
+import 'package:provider/provider.dart';
+import 'package:family/providers/user_provider.dart';
+
 
 class SignIn extends StatefulWidget {
   const SignIn({Key? key}) : super(key: key);
@@ -44,9 +47,11 @@ class _SignInState extends State<SignIn> {
       if (isValid) {
         final userModel = await UserService.fetchUser(email);
         if (userModel != null) {
+          Provider.of<UserProvider>(context, listen: false).setUser(userModel);
+
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => MainScreen(user: userModel)),
+            MaterialPageRoute(builder: (_) => const MainScreen()),
           );
         }
       }
@@ -89,9 +94,10 @@ class _SignInState extends State<SignIn> {
 
         final userModel = await UserService.fetchUser(email);
         if (userModel != null) {
+          Provider.of<UserProvider>(context, listen: false).setUser(userModel);
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => MainScreen(user: userModel)),
+            MaterialPageRoute(builder: (_) => const MainScreen()),
           );
         }
       }

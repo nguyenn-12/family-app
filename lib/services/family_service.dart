@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../models/family.dart';
+import 'package:flutter/cupertino.dart';
+import '../models/families.dart';
 
 class FamilyService {
   static final _familyRef = FirebaseFirestore.instance.collection('families');
@@ -29,14 +30,28 @@ class FamilyService {
   // TODO: update member count
   static Future<void> updateMemberCount(String familyId, int delta) async {
     final docRef = _familyRef.doc(familyId);
+
     await FirebaseFirestore.instance.runTransaction((transaction) async {
       final snapshot = await transaction.get(docRef);
-      if (!snapshot.exists) return;
+
+      if (!snapshot.exists) {
+        debugPrint("⚠️ Document $familyId does not exist. Skipping update.");
+        return;
+      }
 
       final currentCount = snapshot['numMember'] ?? 0;
-      transaction.update(docRef, {'numMember': currentCount + delta});
+      final newCount = currentCount + delta;
+
+      // Nếu số lượng còn lại <= 0 thì không update nữa
+      if (newCount <= 0) {
+        debugPrint("⚠️ Member count is $newCount. Skipping update to avoid recreating deleted document.");
+        return;
+      }
+
+      transaction.update(docRef, {'numMember': newCount});
     });
   }
+
 
   // TODO: fetch members according to familyCode
   static Future<List<Map<String, dynamic>>> fetchFamilyMembers(String familyCode) async {

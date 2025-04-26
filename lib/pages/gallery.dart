@@ -7,10 +7,12 @@ import 'package:family/models/images.dart';
 import 'package:family/pages/image_details.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:family/models/users.dart';
+import 'package:provider/provider.dart';
+import 'package:family/providers/user_provider.dart';
 
 class GalleryPage extends StatefulWidget {
-  final UserModel user;
-  const GalleryPage({super.key, required this.user});
+  //final UserModel user;
+  const GalleryPage({super.key});
 
   @override
   State<GalleryPage> createState() => _GalleryPageState();
@@ -23,7 +25,7 @@ class _GalleryPageState extends State<GalleryPage> {
 
   String? selectedMonth;
   String? selectedYear;
-  late UserModel currentUser;
+  late final currentUser;
 
   final ScrollController _scrollController = ScrollController();
   bool _isLoadingMore = false;
@@ -38,8 +40,13 @@ class _GalleryPageState extends State<GalleryPage> {
   @override
   void initState() {
     super.initState();
-    currentUser = widget.user;
-    _loadImages(refresh: true); // Bắt đầu bằng refresh để khởi tạo _allImages
+    //currentUser = widget.user;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final provider = Provider.of<UserProvider>(context, listen: false);
+      currentUser = provider.user;
+      _loadImages(refresh: true);
+    });
+    //_loadImages(refresh: true); // Bắt đầu bằng refresh để khởi tạo _allImages
     _scrollController.addListener(() {
       if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 100) {
         _loadImages(); // Tải thêm ảnh khi gần chạm cuối
