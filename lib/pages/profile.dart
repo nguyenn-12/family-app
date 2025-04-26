@@ -397,7 +397,7 @@ class _ProfilePageState extends State<ProfilePage> with WidgetsBindingObserver {
   Widget _buildHeader(UserModel user) {
     return Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 30),
+        padding: const EdgeInsets.fromLTRB(24, 45, 24, 30),
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             colors: [Color(0xFF00C6A2), Color(0xFF007B8F)],
