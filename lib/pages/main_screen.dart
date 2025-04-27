@@ -62,7 +62,19 @@ class _MainScreenState extends State<MainScreen> {
             _titles[_currentIndex],
             style: const TextStyle(fontSize: 30, fontWeight: FontWeight.bold, color: Colors.white),
           ),
-          backgroundColor: const Color(0xFFA580D8),
+          //backgroundColor: const Color(0xFFA580D8),
+          flexibleSpace: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Color(0xFF00C6A2),
+                  Color(0xFF007B8F),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+          ),
         ),
       ),
 

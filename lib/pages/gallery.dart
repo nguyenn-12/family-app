@@ -74,6 +74,7 @@ class _GalleryPageState extends State<GalleryPage> {
           _allImages.addAll(images);
         }
         _filteredImages = List.from(_allImages); // reset filter nếu cần
+
         if (images.length < _pageSize) _hasMore = false;
         _currentPage++;
       });
@@ -150,6 +151,35 @@ class _GalleryPageState extends State<GalleryPage> {
                           ElevatedButton(
                             onPressed: () async {
                               if (selectedImage != null) {
+
+                                final familyCode = currentUser.familyCode;
+                                if (familyCode == "") {
+                                  print("No family code, can't add image.");
+                                  showDialog(
+                                    context: context,
+                                    builder: (BuildContext context) {
+                                      return AlertDialog(
+                                        content: Text(
+                                          "You must join a family to share your pictures.",
+                                          textAlign: TextAlign.center,
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(20),
+                                        ),
+                                        actions: [
+                                          Center(
+                                            child: TextButton(
+                                              onPressed: () => Navigator.of(context).pop(),
+                                              child: Text("OK"),
+                                            ),
+                                          ),
+                                        ],
+                                      );
+                                    },
+                                  );
+                                  return;
+                                }
+
                                 Navigator.pop(context);
                                 await _uploadImageToImgurAndFirestore(
                                     selectedImage!, description);
@@ -246,7 +276,8 @@ class _GalleryPageState extends State<GalleryPage> {
         familyCode: familyCode,
       );
       if (!mounted) return;
-      _loadImages(); // Load lại ảnh sau khi upload
+      _loadImages(refresh: true);
+
     } catch (e) {
       print(e);
       ScaffoldMessenger.of(context).showSnackBar(

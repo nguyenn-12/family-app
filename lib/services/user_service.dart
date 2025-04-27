@@ -130,5 +130,40 @@ class UserService {
     return doc.data()?['familyCode'];
   }
 
+  static Future<UserModel?> getUserById(String id) async {
+    try {
+      final doc = await _usersRef.doc(id).get();
+      if (doc.exists) {
+        final data = doc.data() as Map<String, dynamic>;
+        return UserModel.fromMap(data);
+      } else {
+        return null; // Không tìm thấy user
+      }
+    } catch (e) {
+      print('Error fetching user by id: $e');
+      return null;
+    }
+  }
+
+  static Future<UserModel?> getUserByEmail(String email) async {
+    try {
+      final querySnapshot = await _usersRef
+          .where('email', isEqualTo: email)
+          .limit(1)
+          .get();
+
+      if (querySnapshot.docs.isNotEmpty) {
+        final data = querySnapshot.docs.first.data();
+        return UserModel.fromMap(data);
+      } else {
+        return null; // Không tìm thấy user
+      }
+    } catch (e) {
+      print('Error fetching user by email: $e');
+      return null;
+    }
+  }
+
+
 
 }

@@ -7,6 +7,8 @@ class Event {
   final String title;
   final String location;
   final String familyCode;
+  final bool? isBirthday; // Không bắt buộc, có thể là null
+  final String? owner; // Không bắt buộc, có thể là null
 
   Event({
     required this.id,
@@ -15,6 +17,8 @@ class Event {
     required this.title,
     required this.location,
     required this.familyCode,
+    this.isBirthday, // Không bắt buộc
+    this.owner, // Không bắt buộc
   });
 
   factory Event.fromMap(Map<String, dynamic> data, String documentId) {
@@ -25,6 +29,8 @@ class Event {
       title: data['title'] ?? '',
       location: data['location'] ?? '',
       familyCode: data['familyCode'] ?? '',
+      isBirthday: data['isBirthday'] ?? false, // Có thể null
+      owner: data['owner'] ?? '', // Có thể null
     );
   }
 
@@ -35,6 +41,8 @@ class Event {
       'title': title,
       'location': location,
       'familyCode': familyCode,
+      'isBirthday' : isBirthday,
+      'owner': owner,
     };
   }
 }
