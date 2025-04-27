@@ -14,7 +14,7 @@ import 'package:family/pages/signin.dart';
 import 'package:family/pages/notification.dart';
 import 'package:family/services/notification_service.dart';
 import 'package:family/models/notifications.dart';
-
+import 'package:family/services/event_service.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -90,6 +90,8 @@ class _ProfilePageState extends State<ProfilePage> with WidgetsBindingObserver {
       final familyId = await FamilyService.createFamily(user.id);
       await UserService.updateFamilyCode(user.id, familyId);
       await _refreshUser();
+      await EventService.addBirthdayEvent(user.email, user.name, familyId, user.dob);
+
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
@@ -506,34 +508,69 @@ class _ProfilePageState extends State<ProfilePage> with WidgetsBindingObserver {
                 ],
               ),
             ),
-            Stack(
-              children: [
-                IconButton(
-                  icon: Icon(Icons.notifications_none, color: Colors.white, size: 35),
-                  onPressed: () async {
-                    await Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => NotificationPage()),
-                    );
-                    _checkUnreadNotifications(); // Check lại sau khi từ NotificationPage quay về
-                    _loadFamilyMembers(user.familyCode);
-                  },
-                ),
-                if (hasUnreadNotification)
-                  Positioned(
-                    right: 8,
-                    top: 8,
-                    child: Container(
-                      width: 10,
-                      height: 10,
-                      decoration: BoxDecoration(
-                        color: Colors.red,
-                        shape: BoxShape.circle,
-                      ),
+            // Stack(
+            //   children: [
+            //     IconButton(
+            //       icon: Icon(Icons.notifications_none, color: Colors.white, size: 35),
+            //       onPressed: () async {
+            //         await Navigator.push(
+            //           context,
+            //           MaterialPageRoute(builder: (context) => NotificationPage()),
+            //         );
+            //         _checkUnreadNotifications(); // Check lại sau khi từ NotificationPage quay về
+            //         _loadFamilyMembers(user.familyCode);
+            //       },
+            //     ),
+            //     if (hasUnreadNotification)
+            //       Positioned(
+            //         right: 8,
+            //         top: 8,
+            //         child: Container(
+            //           width: 10,
+            //           height: 10,
+            //           decoration: BoxDecoration(
+            //             color: Colors.red,
+            //             shape: BoxShape.circle,
+            //           ),
+            //         ),
+            //       ),
+            //   ],
+            // )
+            StreamBuilder<bool>(
+              stream: NotificationService().hasUnreadNotifications(user.email),
+              builder: (context, snapshot) {
+                final hasUnreadNotification = snapshot.data ?? false;
+
+                return Stack(
+                  children: [
+                    IconButton(
+                      icon: Icon(Icons.notifications_none, color: Colors.white, size: 35),
+                      onPressed: () async {
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => NotificationPage()),
+                        );
+                        _loadFamilyMembers(user.familyCode); // chỉ cần reload family members, không cần checkUnread nữa
+                      },
                     ),
-                  ),
-              ],
+                    if (hasUnreadNotification)
+                      Positioned(
+                        right: 8,
+                        top: 8,
+                        child: Container(
+                          width: 10,
+                          height: 10,
+                          decoration: BoxDecoration(
+                            color: Colors.red,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ),
+                  ],
+                );
+              },
             )
+
 
 
           ],

@@ -62,4 +62,23 @@ class NotificationService {
     }
   }
 
+  Stream<List<NotificationModel>> streamNotificationsByReceiver(String email) {
+    return FirebaseFirestore.instance
+        .collection('notifications')
+        .where('receiver', isEqualTo: email)
+        .orderBy('time', descending: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.map((doc) => NotificationModel.fromMap(doc.data() as Map<String, dynamic>, doc.id)).toList());
+  }
+
+  Stream<bool> hasUnreadNotifications(String email) {
+    return FirebaseFirestore.instance
+        .collection('notifications')
+        .where('receiver', isEqualTo: email)
+        .where('status', isEqualTo: 0) // Chỉ lấy notification chưa đọc
+        .snapshots()
+        .map((snapshot) => snapshot.docs.isNotEmpty);
+  }
+
+
 }

@@ -1,3 +1,4 @@
+import 'package:family/services/event_service.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart'; // để lấy email user đăng nhập
 import 'package:family/providers/user_provider.dart';
@@ -8,6 +9,7 @@ import 'package:family/models/notifications.dart';
 import 'package:family/services/notification_service.dart';
 import 'package:family/services/user_service.dart';
 import 'package:family/services/family_service.dart';
+import 'package:family/services/event_service.dart';
 
 class NotificationPage extends StatefulWidget {
   @override
@@ -15,11 +17,11 @@ class NotificationPage extends StatefulWidget {
 }
 
 class _NotificationPageState extends State<NotificationPage> {
-  late Future<List<NotificationModel>> _notificationsFuture;
+  //late Future<List<NotificationModel>> _notificationsFuture;
   final NotificationService _notificationService = NotificationService();
   late List<NotificationModel> notifications = [];
   late final currentUser;
-  bool isLoaded = false;
+  //bool isLoaded = false;
 
 
   @override
@@ -27,23 +29,6 @@ class _NotificationPageState extends State<NotificationPage> {
     super.initState();
     final provider = Provider.of<UserProvider>(context, listen: false);
     currentUser = provider.user;
-
-    if (currentUser != null) {
-      _notificationsFuture = _notificationService.fetchNotificationsByReceiver(currentUser.email!);
-    } else {
-      _notificationsFuture = Future.value([]);
-    }
-  }
-
-  void _fetchNotifications() async {
-    if (currentUser != null) {
-     // _notificationsFuture = _notificationService.fetchNotificationsByReceiver(currentUser.email!);
-      final newNotifications = await _notificationService.fetchNotificationsByReceiver(currentUser.email!);
-      setState(() {
-        notifications = newNotifications;
-        _notificationsFuture = Future.value(newNotifications);
-      });
-    }
   }
 
   void _handleNotificationTap(NotificationModel notif) async {
@@ -146,9 +131,10 @@ class _NotificationPageState extends State<NotificationPage> {
 
                           // Xóa notification
                           await NotificationService.deleteNotification(notif.id);
-                          setState(() {
-                            notifications.removeWhere((n) => n.id == notif.id);
-                          });
+                          // setState(() {
+                          //   notifications.removeWhere((n) => n.id == notif.id);
+                          // });
+                          await EventService.addBirthdayEvent(senderUser.email, senderUser.name, realFamilyCode, senderUser.dob);
                         }
                         Navigator.pop(context);
 
@@ -175,9 +161,9 @@ class _NotificationPageState extends State<NotificationPage> {
 
                           // Xóa notification
                           await NotificationService.deleteNotification(notif.id);
-                          setState(() {
-                            notifications.removeWhere((n) => n.id == notif.id);
-                          });
+                          // setState(() {
+                          //   notifications.removeWhere((n) => n.id == notif.id);
+                          // });
                         }
                         Navigator.pop(context);
 
@@ -241,7 +227,7 @@ class _NotificationPageState extends State<NotificationPage> {
               ),
               const SizedBox(height: 20),
               Text(
-                '" ${notif.content} "',
+                ' ${notif.content}',
                 style: TextStyle(fontSize: 16),
                 textAlign: TextAlign.center,
               ),
@@ -295,45 +281,42 @@ class _NotificationPageState extends State<NotificationPage> {
         ),
       ),
       backgroundColor: Colors.white,
-      body: FutureBuilder<List<NotificationModel>>(
-        future: _notificationsFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return Center(child: Text('Something went wrong'));
-          }
-          if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return Center(child: Text('There are no notification'));
-          }
-          if (!isLoaded) {
-            notifications = snapshot.data!;
-            isLoaded = true;
-          }
+        body: StreamBuilder<List<NotificationModel>>(
+          stream: _notificationService.streamNotificationsByReceiver(currentUser.email!),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return Center(child: CircularProgressIndicator());
+            }
+            if (snapshot.hasError) {
+              return Center(child: Text('Something went wrong'));
+            }
+            if (!snapshot.hasData || snapshot.data!.isEmpty) {
+              return Center(child: Text('There are no notifications'));
+            }
 
-          //List<NotificationModel> notifications = snapshot.data!;
-          notifications = snapshot.data!;
-          return ListView.builder(
-            itemCount: notifications.length,
-            itemBuilder: (context, index) {
-              final notif = notifications[index];
-              return Container(
+            final notifications = snapshot.data!;
+
+            return ListView.builder(
+              itemCount: notifications.length,
+              itemBuilder: (context, index) {
+                final notif = notifications[index];
+                return Container(
                   decoration: BoxDecoration(
-                  border: Border(bottom: BorderSide(color: Colors.grey.shade300, width: 1)), // Viền dưới
-              ),
-                child: ListTile(
-                tileColor: notif.status == 0 ? Colors.purple.shade50 : Colors.white,
-                leading: _buildLeadingIcon(notif.type),
-                title: Text(_getNotificationMessage(notif.type)),
-                subtitle: Text('${_formatTime(notif.time)}'),
-                onTap: () => _handleNotificationTap(notif),
-                )
-              );
-            },
-          );
-        },
-      ),
+                    border: Border(bottom: BorderSide(color: Colors.grey.shade300, width: 1)),
+                  ),
+                  child: ListTile(
+                    tileColor: notif.status == 0 ? Colors.purple.shade50 : Colors.white,
+                    leading: _buildLeadingIcon(notif.type),
+                    title: Text(_getNotificationMessage(notif.type)),
+                    subtitle: Text('${_formatTime(notif.time)}'),
+                    onTap: () => _handleNotificationTap(notif),
+                  ),
+                );
+              },
+            );
+          },
+        )
+
     );
   }
 
@@ -361,9 +344,9 @@ class _NotificationPageState extends State<NotificationPage> {
       case 'NewMember':
         return 'Someone is asking to JOIN your family';
       case 'Birthday':
-        return 'Today is someone\'s BIRTHDAY.';
+        return 'Someone reminded about BIRTHDAY event.';
       case 'Event':
-        return 'Someone just added a new EVENT';
+        return 'A new update to your SCHEDULE';
       default:
         return 'You have a new notification';
     }

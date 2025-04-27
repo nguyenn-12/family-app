@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 
 import 'package:family/models/events.dart';
 import 'package:family/services/event_service.dart';
 import 'package:family/providers/user_provider.dart';
+import 'package:family/models/notifications.dart';
+import 'package:family/services/notification_service.dart';
 
 class CalendarPage extends StatefulWidget {
   //final UserModel user;
@@ -35,6 +39,7 @@ class _CalendarPageState extends State<CalendarPage> {
       final provider = Provider.of<UserProvider>(context, listen: false);
       currentUser = provider.user;
       _loadEventsFromFirestore();
+      setState(() {});
     });
 
   }
@@ -61,6 +66,41 @@ class _CalendarPageState extends State<CalendarPage> {
     });
   }
 
+  static Future<void> sendBirthdayNotification(Event event) async {
+
+    try {
+      // Lấy thông tin về gia đình từ event
+      final familyCode = event.familyCode;
+      final ownerEmail = event.owner ?? ''; // Email của người chủ sinh nhật
+      final title = event.title; // Tiêu đề của sự kiện, có thể là tên của người chủ sinh nhật
+
+      // Lấy danh sách các người dùng có familyCode giống với currentUser
+      final usersCollection = FirebaseFirestore.instance.collection('users');
+      final snapshot = await usersCollection.where('familyCode', isEqualTo: familyCode).get();
+
+      // Duyệt qua từng user và tạo thông báo
+      for (var doc in snapshot.docs) {
+        final user = doc.data();
+        final receiverEmail = user['email'];
+
+        // Tạo thông báo
+        final notification = NotificationModel(
+          id: '',
+          receiver: receiverEmail, // Người nhận là email của người dùng
+          sender: ownerEmail, // Người gửi là chủ sinh nhật
+          content: '$title! 🎉', // Nội dung thông báo
+          type: 'Birthday', // Loại thông báo
+          status: 0, // 0: chưa xem, 1: đã xem
+          time: DateTime.now(), // Thời gian thông báo
+        );
+
+        // Gọi hàm addNotification để lưu thông báo vào Firestore
+        await NotificationService.addNotification(notification);
+      }
+    } catch (e) {
+      print('Error sending birthday notification: $e');
+    }
+  }
 
 
   void _showEventDialog({DateTime? selectedDate, Map<String, dynamic>? event}) {
@@ -73,7 +113,7 @@ class _CalendarPageState extends State<CalendarPage> {
             hour: int.parse(event!['time'].split(':')[0]),
             minute: int.parse(event['time'].split(':')[1]),
         ) : TimeOfDay.now();
-
+    final bool isBirthday = event?['isBirthday'] ?? false;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -198,10 +238,45 @@ class _CalendarPageState extends State<CalendarPage> {
                             ),
                             icon: Icon(Icons.delete, color: Colors.white, size: 20),
                             label: Text('Delete', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: Colors.white)),
-                            onPressed: () async {
-                              await EventService.deleteEvent(event['id']);
-                              Navigator.pop(context);
-                              _loadEventsFromFirestore();
+                            onPressed: (isBirthday)
+                                ? null : () async {
+                                await EventService.deleteEvent(event['id']);
+
+                                final senderEmail = currentUser.email;
+
+                                // Fetch family members từ collection users
+                                final membersSnapshot = await FirebaseFirestore
+                                    .instance
+                                    .collection('users')
+                                    .where('familyCode',
+                                    isEqualTo: currentUser.familyCode)
+                                    .get();
+
+                                // Add notification for each member
+                                for (var doc in membersSnapshot.docs) {
+                                  final receiverEmail = doc['email'];
+
+                                  if (receiverEmail == senderEmail) {
+                                    continue; // không gửi thông báo cho chính mình
+                                  }
+
+                                  final notification = NotificationModel(
+                                    id: '',
+                                    receiver: receiverEmail,
+                                    sender: senderEmail,
+                                    content: '${currentUser
+                                        .name} deleted an event on ${selectedDate
+                                        ?.toLocal().toString().split(' ')[0]}',
+                                    type: 'Event',
+                                    status: 0,
+                                    time: DateTime.now(),
+                                  );
+
+                                  await NotificationService.addNotification(
+                                      notification);
+                                }
+                                Navigator.pop(context);
+                                _loadEventsFromFirestore();
                             },
                           ),
                         ElevatedButton.icon(
@@ -222,8 +297,30 @@ class _CalendarPageState extends State<CalendarPage> {
 
                             if (event == null) {
                               final familyCode = currentUser.familyCode;
-                              if (familyCode == null) {
+                              if (familyCode == "") {
                                 print("No family code, can't add event.");
+                                showDialog(
+                                  context: context,
+                                  builder: (BuildContext context) {
+                                    return AlertDialog(
+                                      content: Text(
+                                        "You must join a family to add an event.",
+                                        textAlign: TextAlign.center,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(20),
+                                      ),
+                                      actions: [
+                                        Center(
+                                          child: TextButton(
+                                            onPressed: () => Navigator.of(context).pop(),
+                                            child: Text("OK"),
+                                          ),
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                );
                                 return;
                               }
                               // Add new
@@ -236,6 +333,36 @@ class _CalendarPageState extends State<CalendarPage> {
                                 //familyCode: '12345',
                               );
 
+                              final senderEmail = currentUser.email;
+
+                              // Fetch family members từ collection users
+                              final membersSnapshot = await FirebaseFirestore.instance
+                                  .collection('users')
+                                  .where('familyCode', isEqualTo: familyCode)
+                                  .get();
+
+                              // Add notification for each member
+                              for (var doc in membersSnapshot.docs) {
+                                final receiverEmail = doc['email'];
+
+                                  if (receiverEmail == senderEmail) {
+                                    continue; // không gửi thông báo cho chính mình
+                                  }
+
+                                final notification = NotificationModel(
+                                  id: '',
+                                  receiver: receiverEmail,
+                                  sender: senderEmail,
+                                  content: '${currentUser.name} added an event on ${selectedDate?.toLocal().toString().split(' ')[0]}\n Check Calendar for details ! ',
+                                  type: 'Event',
+                                  status: 0,
+                                  time: DateTime.now(),
+                                );
+
+                                await NotificationService.addNotification(notification);
+
+                              }
+
                             } else {
                               // Update
                               await EventService.updateEvent(
@@ -244,6 +371,35 @@ class _CalendarPageState extends State<CalendarPage> {
                                 title: title,
                                 location: location,
                               );
+
+                              final senderEmail = currentUser.email;
+
+                              // Fetch family members từ collection users
+                              final membersSnapshot = await FirebaseFirestore.instance
+                                  .collection('users')
+                                  .where('familyCode', isEqualTo: currentUser.familyCode)
+                                  .get();
+
+                              // Add notification for each member
+                              for (var doc in membersSnapshot.docs) {
+                                final receiverEmail = doc['email'];
+
+                                if (receiverEmail == senderEmail) {
+                                  continue; // không gửi thông báo cho chính mình
+                                }
+                                final notification = NotificationModel(
+                                  id: '',
+                                  receiver: receiverEmail,
+                                  sender: senderEmail,
+                                  content: '${currentUser.name} updated an event on ${selectedDate?.toLocal().toString().split(' ')[0]}\n Check Calendar for details ! ',
+                                  type: 'Event',
+                                  status: 0,
+                                  time: DateTime.now(),
+                                );
+
+                                await NotificationService.addNotification(notification);
+                              }
+
                             }
 
                             Navigator.pop(context);
@@ -395,8 +551,9 @@ class _CalendarPageState extends State<CalendarPage> {
           ],
         ),
       ),
+
       floatingActionButton: _selectedDay != null
-          ? FloatingActionButton(
+           ? FloatingActionButton(
         onPressed: () {
           // TODO: mở form tạo sự kiện
           print('Tạo sự kiện cho ngày $_selectedDay');
@@ -407,8 +564,9 @@ class _CalendarPageState extends State<CalendarPage> {
           borderRadius: BorderRadius.circular(30), // độ cong góc
         ),
         child: Icon(Icons.add, color: Colors.white, size: 40),
-      )
+        )
           : null,
+
     );
   }
 
@@ -460,6 +618,36 @@ class _CalendarPageState extends State<CalendarPage> {
 
                   ),
                 ),
+                trailing: (event.isBirthday ?? false)
+                    ? IconButton(
+                  icon: Icon(Icons.notifications_active),
+                  onPressed: () {
+                    sendBirthdayNotification(event);
+                    showDialog(
+                      context: context,
+                      builder: (BuildContext context) {
+                        return AlertDialog(
+                          content: Text(
+                            "Successfully remind your family about birthday.",
+                            textAlign: TextAlign.center,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          actions: [
+                            Center(
+                              child: TextButton(
+                                onPressed: () => Navigator.of(context).pop(),
+                                child: Text("OK"),
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    );
+                  },
+                )
+                    : null,
                 onTap: () {
                   _showEventDialog(
                     selectedDate: event.day,
@@ -468,6 +656,7 @@ class _CalendarPageState extends State<CalendarPage> {
                       'title': event.title,
                       'location': event.location,
                       'time': event.time,
+                      'isBirthday': event.isBirthday,
                     },
                   );
                 },
@@ -482,6 +671,7 @@ class _CalendarPageState extends State<CalendarPage> {
 
   Map<String, List<Event>> groupEventsByTimeSlot(List<Event> events) {
     Map<String, List<Event>> grouped = {
+      'Birthday': [],
       'Morning': [],
       'Noon': [],
       'Afternoon': [],
@@ -490,8 +680,11 @@ class _CalendarPageState extends State<CalendarPage> {
 
     for (var event in events) {
       final hour = int.tryParse(event.time.split(':')[0]) ?? 0;
+      bool isBirthday = event.isBirthday ?? false;
 
-      if (hour >= 5 && hour < 11) {
+      if (isBirthday) {
+        grouped['Birthday']!.add(event);
+      } else if (hour >= 5 && hour < 11) {
         grouped['Morning']!.add(event);
       } else if (hour >= 11 && hour < 14) {
         grouped['Noon']!.add(event);
@@ -507,6 +700,8 @@ class _CalendarPageState extends State<CalendarPage> {
 
   IconData _getIconForSlot(String slot) {
     switch (slot) {
+      case 'Birthday':
+        return Icons.cake;
       case 'Morning':
         return Icons.wb_sunny;
       case 'Noon':
@@ -522,6 +717,8 @@ class _CalendarPageState extends State<CalendarPage> {
 
   Color _getIconColor(String slot) {
     switch (slot) {
+      case 'Birthday':
+        return Color(0xFFEF6393);
       case 'Morning':
         return Color(0xFFF4BC06);
       case 'Noon':
@@ -537,6 +734,8 @@ class _CalendarPageState extends State<CalendarPage> {
 
   Color _getBackgroudColor(String slot) {
     switch (slot) {
+      case 'Birthday':
+        return Color(0xFFFBCCDC);
       case 'Morning':
         return Color(0xFFF4E5AF);
       case 'Noon':
