@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/src/material/colors.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -15,6 +16,7 @@ import 'package:family/pages/notification.dart';
 import 'package:family/services/notification_service.dart';
 import 'package:family/models/notifications.dart';
 import 'package:family/services/event_service.dart';
+
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -356,7 +358,7 @@ class _ProfilePageState extends State<ProfilePage> with WidgetsBindingObserver {
     final hasFamily = user.familyCode.isNotEmpty;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F6FA),
+      // backgroundColor: const Color(0xFFF5F6FA),
       body: SingleChildScrollView(
         child: Column(
           children: [
@@ -501,7 +503,7 @@ class _ProfilePageState extends State<ProfilePage> with WidgetsBindingObserver {
                 children: [
                   Text(DateFormat('EEEE, MMMM d yyyy').format(DateTime.now()), style: const TextStyle(color: Colors.white70, fontSize: 12)),
                   const SizedBox(height: 6),
-                  const Text("Welcome", style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+                  const Text("Welcome", style: TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 6),
                   Text(user.name, style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
                   const Text("Have a nice day !", style: TextStyle(color: Colors.white70, fontSize: 14)),
@@ -628,9 +630,9 @@ class _ProfilePageState extends State<ProfilePage> with WidgetsBindingObserver {
         if (createdFamily != null)
           Row(
             children: [
-              const Icon(Icons.verified_user, size: 16),
+              const Icon(Icons.verified_user, size: 16, color: Colors.greenAccent),
               const SizedBox(width: 6),
-              Text("Created by: ${_getCreatorName()}", style: const TextStyle(fontStyle: FontStyle.italic)),
+              Text("Created by: ${_getCreatorName()}", style: TextStyle(fontStyle: FontStyle.italic, color: Colors.grey[600])),
             ],
           ),
       ],

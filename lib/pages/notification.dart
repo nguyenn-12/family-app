@@ -92,17 +92,19 @@ class _NotificationPageState extends State<NotificationPage> {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+              Column(
                 children: [
                   CircleAvatar(
                     radius: 35,
                     backgroundImage: NetworkImage(senderAvatar),
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(height: 10),
                   Text(
                     senderName,
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
                   ),
                 ],
               ),

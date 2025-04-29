@@ -234,20 +234,34 @@ class _SignInState extends State<SignIn> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Text(
-                          'Incorrect email or password!',
-                          style: TextStyle(color: Color(0xFFB71C1C), fontSize: 14),
+                        Flexible(
+                          child: Text(
+                            'Incorrect email or password!',
+                            style: TextStyle(
+                              color: Color(0xFFB71C1C),
+                              fontSize: 14,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
                         ),
-                        const SizedBox(width: 2),
-                        TextButton(
-                          onPressed: () => _onForgotPassword(context),
-                          child: const Text(
-                            'Forgot Password?',
-                            style: TextStyle(color: Color(0xFF329B80), fontSize: 14),
+                        SizedBox(width: 6),
+                        Flexible(
+                          child: TextButton(
+                            onPressed: () => _onForgotPassword(context),
+                            child: Text(
+                              'Forgot password?',
+                              style: TextStyle(
+                                color: Color(0xFF329B80),
+                                fontSize: 14,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
                         ),
                       ],
-                    ),
+                    )
+
                   ],
                   const SizedBox(height: 24),
                   ElevatedButton(
