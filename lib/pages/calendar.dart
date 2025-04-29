@@ -428,13 +428,12 @@ class _CalendarPageState extends State<CalendarPage> {
     final screenHeight = MediaQuery.of(context).size.height;
 
     return Scaffold(
-      backgroundColor: Color(0xFFF9F8FD),
       body: SafeArea(
         child: Column(
           children: [
             // Calendar (nửa trên màn hình)
             Container(
-              height: screenHeight * 0.45,
+              // height: screenHeight * 0.45,
               margin: EdgeInsets.all(16),
               padding: EdgeInsets.all(12),
               decoration: BoxDecoration(

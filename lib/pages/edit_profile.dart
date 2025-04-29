@@ -145,14 +145,24 @@ class _EditProfilePageState extends State<EditProfilePage> {
       backgroundColor: const Color(0xfffdf8fd),
       appBar: AppBar(
         centerTitle: true,
-        title: const Text('Edit Profile', style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold, color: Colors.white)),
-        backgroundColor: Color(0xFFA580D8),
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
+        title: Text(
+          "Edit Profile",
+          style: const TextStyle(fontSize: 30, fontWeight: FontWeight.bold, color: Colors.white),
         ),
-      ),
+        //backgroundColor: const Color(0xFFA580D8),
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Color(0xFF00C6A2),
+                Color(0xFF007B8F),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
+    ),
       body: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
         children: [
