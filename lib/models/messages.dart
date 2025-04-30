@@ -5,6 +5,7 @@ class MessageModel {
   final String? text;
   final String? imageUrl;
   final DateTime timestamp;
+  final List<String> readBy;
 
   MessageModel({
     required this.senderId,
@@ -13,6 +14,7 @@ class MessageModel {
     this.text,
     this.imageUrl,
     required this.timestamp,
+    required this.readBy,
   });
 
   Map<String, dynamic> toMap() {
@@ -23,6 +25,7 @@ class MessageModel {
       'text': text,
       'imageUrl': imageUrl,
       'timestamp': timestamp.toIso8601String(),
+      'readBy': readBy,
     };
   }
 
@@ -34,6 +37,7 @@ class MessageModel {
       text: map['text'],
       imageUrl: map['imageUrl'],
       timestamp: DateTime.parse(map['timestamp']),
+      readBy: List<String>.from(map['readBy'] ?? []),
     );
   }
 }
