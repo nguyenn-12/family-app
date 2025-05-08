@@ -7,6 +7,7 @@ class NotificationModel {
   final String content;
   final String type; // NewMember, Birthday, Event
   final int status; // 0: chưa xem, 1: đã xem
+  final int show; // 0: chưa hiển thị, 1: đã hiển thị
   final DateTime time;
 
   NotificationModel({
@@ -16,6 +17,7 @@ class NotificationModel {
     required this.content,
     required this.type,
     required this.status,
+    this.show = 0,
     required this.time,
   });
 
@@ -28,6 +30,7 @@ class NotificationModel {
       content: map['content'] ?? '',
       type: map['type'] ?? '',
       status: map['status'] ?? 0,
+      show: map['show'] ?? 0,
       time: (map['time'] as Timestamp).toDate(),
     );
   }
@@ -40,6 +43,7 @@ class NotificationModel {
       'content': content,
       'type': type,
       'status': status,
+      'show': show,
       'time': Timestamp.fromDate(time), // Firestore cần Timestamp
     };
   }

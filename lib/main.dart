@@ -1,4 +1,5 @@
 
+import 'package:family/pages/profile.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -28,6 +29,9 @@ Future<void> _showNotification(RemoteMessage message) async {
     'Your Channel Name',
     importance: Importance.high,
     priority: Priority.high,
+    playSound: true,
+    sound: RawResourceAndroidNotificationSound('notification'),
+    enableVibration: true,
   );
 
   const NotificationDetails notificationDetails =
@@ -103,6 +107,10 @@ class _MyAppState extends State<MyApp> {
     // Khi app được mở bằng cách nhấn vào thông báo
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
       // Bạn có thể điều hướng hoặc xử lý khác ở đây nếu muốn
+      // Navigator.push(
+      //   context,
+      //   MaterialPageRoute(builder: (context) => ProfilePage()),
+      // );
       debugPrint('Notification clicked: ${message.notification?.title}');
     });
   }
