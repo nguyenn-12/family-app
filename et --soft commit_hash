@@ -1,0 +1,253 @@
+[33mcommit 2823a8a73a4b3d106d0f1d9c1bfeb83d898ba85b[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mqmai/fix-notification[m[33m, [m[1;31morigin/qmai/fix-notification[m[33m)[m
+Author: QuynhMai273na <nguyenquynhmai273na@gmail.com>
+Date:   Fri May 9 00:46:06 2025 +0700
+
+    fix push notification
+
+[33mcommit d274345aeaa48b3c689098e00cef453de7aec36c[m
+Author: QuynhMai273na <nguyenquynhmai273na@gmail.com>
+Date:   Fri May 9 00:28:33 2025 +0700
+
+    fix notification
+
+[33mcommit 305addaddc056ec6b718bdb7eb774484ab707e27[m[33m ([m[1;31morigin/dev[m[33m, [m[1;32mdev[m[33m)[m
+Merge: b1ef559 78a7d73
+Author: Nguyễn Thị Quỳnh Mai <nguyenquynhmai273na@gmail.com>
+Date:   Thu May 1 21:17:15 2025 +0700
+
+    Merge pull request #31 from nguyenn-12/qmai/real-device-notification
+    
+    add notification on status bar
+
+[33mcommit 78a7d73c2837133ad9c018278c2b7b85d8b026ae[m[33m ([m[1;31morigin/qmai/real-device-notification[m[33m, [m[1;32mqmai/real-device-notification[m[33m)[m
+Author: QuynhMai273na <nguyenquynhmai273na@gmail.com>
+Date:   Thu May 1 21:16:22 2025 +0700
+
+    add notification on status bar
+
+[33mcommit b1ef559cceeea7c341628dc49954f9ec8317a243[m
+Merge: 5c3692c 287fa83
+Author: Nguyễn Thị Quỳnh Mai <nguyenquynhmai273na@gmail.com>
+Date:   Thu May 1 15:55:51 2025 +0700
+
+    Merge pull request #29 from nguyenn-12/qmai/new-message-notification
+    
+    new message notification
+
+[33mcommit 287fa83c610da0c4b4eb811a821bb6e60b6e9365[m[33m ([m[1;31morigin/qmai/new-message-notification[m[33m)[m
+Author: QuynhMai273na <nguyenquynhmai273na@gmail.com>
+Date:   Wed Apr 30 22:04:25 2025 +0700
+
+    new message notification
+
+[33mcommit 5c3692c1957f856a6201a2d2ad6d8f39bdea579b[m
+Author: QuynhMai273na <nguyenquynhmai273na@gmail.com>
+Date:   Tue Apr 29 23:33:20 2025 +0700
+
+    fix bug UI
+
+[33mcommit c171addf2199624c7b4ba060568e9603e306ba0b[m
+Merge: f8a517f 1e0e8f6
+Author: nguyenn-12 <thaonguyen68161@gmail.com>
+Date:   Sun Apr 27 17:15:53 2025 +0700
+
+    Merge pull request #26 from nguyenn-12/tnguyen/notification
+    
+    complete notification function
+
+[33mcommit 1e0e8f65c031807a58015ae5898297b9f7912d53[m
+Author: Nguyen Phan Thao Nguyen <thaonguyen68161@gmail.com>
+Date:   Sun Apr 27 17:14:16 2025 +0700
+
+    complete notification function
+
+[33mcommit f8a517f3d796034a5595f911713727d8ef6cff31[m
+Merge: 6321824 4d6eedb
+Author: nguyenn-12 <thaonguyen68161@gmail.com>
+Date:   Sun Apr 27 01:19:33 2025 +0700
+
+    Merge pull request #25 from nguyenn-12/tnguyen/notification
+    
+    add member notification
+
+[33mcommit 4d6eedbc4d296cc03cad08b6bcb7e3340ce6b2b4[m
+Author: Nguyen Phan Thao Nguyen <thaonguyen68161@gmail.com>
+Date:   Sun Apr 27 01:18:35 2025 +0700
+
+    add member notification
+
+[33mcommit 6321824bbaa04aea90b4190f5f63cef1e23d16ed[m
+Merge: 35be2a8 4035187
+Author: Nguyễn Thị Quỳnh Mai <nguyenquynhmai273na@gmail.com>
+Date:   Sun Apr 27 01:00:22 2025 +0700
+
+    Merge pull request #23 from nguyenn-12/qmai/chat-continue
+    
+    finish chat
+
+[33mcommit 403518780fbd7166925eed4a4e2a30f60765dddf[m[33m ([m[1;31morigin/qmai/chat-continue[m[33m)[m
+Author: QuynhMai273na <nguyenquynhmai273na@gmail.com>
+Date:   Sun Apr 27 00:59:19 2025 +0700
+
+    finish chat
+
+[33mcommit 35be2a880c44fdc146868c2cfba945326a682e9f[m
+Merge: 9d3e404 b11306d
+Author: nguyenn-12 <thaonguyen68161@gmail.com>
+Date:   Sat Apr 26 16:37:20 2025 +0700
+
+    Merge pull request #22 from nguyenn-12/tnguyen/notification
+    
+    notification UI
+
+[33mcommit b11306d9513cd9a42ac9bdbec8d705096c42d876[m
+Author: Nguyen Phan Thao Nguyen <thaonguyen68161@gmail.com>
+Date:   Sat Apr 26 16:36:29 2025 +0700
+
+    notification UI
+
+[33mcommit 9d3e4042d778cf02bed0acc6ecc34d9dff2e599b[m
+Merge: d71dd8d c78ac63
+Author: nguyenn-12 <thaonguyen68161@gmail.com>
+Date:   Sat Apr 26 13:21:47 2025 +0700
+
+    Merge pull request #20 from nguyenn-12/test
+    
+    Test
+
+[33mcommit c78ac63e27402bcd029efeec81b9886a1dbe63de[m
+Author: Nguyen Phan Thao Nguyen <thaonguyen68161@gmail.com>
+Date:   Sat Apr 26 13:20:38 2025 +0700
+
+    fix load user
+
+[33mcommit 310c08a49c6afbf1936ac323b58d831c39a743ab[m[33m ([m[1;31morigin/test[m[33m)[m
+Merge: d71dd8d 359217c
+Author: Nguyễn Thị Quỳnh Mai <nguyenquynhmai273na@gmail.com>
+Date:   Sat Apr 26 00:48:54 2025 +0700
+
+    Merge pull request #19 from nguyenn-12/qmai/fix-reload-user
+    
+    Qmai/fix reload user
+
+[33mcommit 359217c94d890b66a5e0c85b586cebfb48756686[m
+Merge: 5754dbf d71dd8d
+Author: Nguyễn Thị Quỳnh Mai <nguyenquynhmai273na@gmail.com>
+Date:   Sat Apr 26 00:48:37 2025 +0700
+
+    Merge branch 'test' into qmai/fix-reload-user
+
+[33mcommit 5754dbf64c65f8aecdbe38ba0e0d5b7b4658506a[m[33m ([m[1;31morigin/qmai/fix-reload-user[m[33m)[m
+Author: QuynhMai273na <nguyenquynhmai273na@gmail.com>
+Date:   Sat Apr 26 00:41:35 2025 +0700
+
+    fix leave family
+
+[33mcommit d0e6d8205148d2fc68b4254c5fc64c48a8fa8b7a[m
+Author: QuynhMai273na <nguyenquynhmai273na@gmail.com>
+Date:   Sat Apr 26 00:05:46 2025 +0700
+
+    fix reload user
+
+[33mcommit ee937b541b6f252394699e7657362f2a206e3408[m
+Author: QuynhMai273na <nguyenquynhmai273na@gmail.com>
+Date:   Fri Apr 25 18:18:36 2025 +0700
+
+    chat UI
+
+[33mcommit d71dd8da88e03e769272f5f70070f01c12f334cb[m
+Merge: 176b817 490d5a2
+Author: nguyenn-12 <thaonguyen68161@gmail.com>
+Date:   Fri Apr 25 16:46:22 2025 +0700
+
+    Merge pull request #17 from nguyenn-12/tnguyen/gallery
+    
+    complete gallery function
+
+[33mcommit 490d5a2f5a31b02c77a341ba7060ef31b46ebe15[m
+Author: Nguyen Phan Thao Nguyen <thaonguyen68161@gmail.com>
+Date:   Fri Apr 25 16:45:18 2025 +0700
+
+    complete gallery function
+
+[33mcommit 176b817f1266e6ff0cd0412c4fffb7004f629651[m
+Merge: fad3b88 3f74762
+Author: nguyenn-12 <thaonguyen68161@gmail.com>
+Date:   Fri Apr 25 12:48:26 2025 +0700
+
+    Merge pull request #16 from nguyenn-12/tnguyen/calendar
+    
+    complete calendar function
+
+[33mcommit 3f7476264ba502d822f8f8947d8ceda03e2a7307[m
+Author: Nguyen Phan Thao Nguyen <thaonguyen68161@gmail.com>
+Date:   Fri Apr 25 12:46:48 2025 +0700
+
+    complete calendar function
+
+[33mcommit e248a9d59336e88b3db64f3f7c026ec536319931[m
+Author: QuynhMai273na <nguyenquynhmai273na@gmail.com>
+Date:   Fri Apr 25 01:46:08 2025 +0700
+
+    fix load UI when edit avatar
+
+[33mcommit fad3b88035caf57be2a6d03b5e0f4915d0551f60[m
+Merge: 4cf623b 35ea4c8
+Author: Nguyễn Thị Quỳnh Mai <nguyenquynhmai273na@gmail.com>
+Date:   Fri Apr 25 01:28:05 2025 +0700
+
+    Merge pull request #15 from nguyenn-12/qmai/edit-avatar
+    
+    edit avatar
+
+[33mcommit 35ea4c823a7b7394ead11c0060c5218f5eebeed7[m[33m ([m[1;31morigin/qmai/edit-avatar[m[33m)[m
+Author: QuynhMai273na <nguyenquynhmai273na@gmail.com>
+Date:   Fri Apr 25 01:26:23 2025 +0700
+
+    edit avatar
+
+[33mcommit 4cf623b45622679a535b31e5861050d360465630[m
+Merge: 5d1d55e 2f4334e
+Author: Nguyễn Thị Quỳnh Mai <nguyenquynhmai273na@gmail.com>
+Date:   Fri Apr 25 00:49:48 2025 +0700
+
+    Merge pull request #14 from nguyenn-12/qmai/edit-profile
+    
+    Qmai/edit profile
+
+[33mcommit 2f4334ef394de4fd45cad79f2e1692d9081ad2ed[m[33m ([m[1;31morigin/qmai/edit-profile[m[33m)[m
+Author: QuynhMai273na <nguyenquynhmai273na@gmail.com>
+Date:   Fri Apr 25 00:47:39 2025 +0700
+
+    edit profile
+
+[33mcommit cab3a69a3b56ead105f6d3f7e750ac5047eae11a[m
+Author: QuynhMai273na <nguyenquynhmai273na@gmail.com>
+Date:   Thu Apr 24 23:21:54 2025 +0700
+
+    fix UI
+
+[33mcommit 5d1d55efb302a2daac44003d11137ec985419e57[m
+Merge: 3506f29 a01d67c
+Author: Nguyễn Thị Quỳnh Mai <nguyenquynhmai273na@gmail.com>
+Date:   Thu Apr 24 22:49:36 2025 +0700
+
+    Merge pull request #13 from nguyenn-12/qmai/profile
+    
+    qmai/profile
+
+[33mcommit a01d67c00e63cb03c0223db9fde0f353f500b654[m[33m ([m[1;31morigin/qmai/profile[m[33m)[m
+Merge: 973ca39 3506f29
+Author: Nguyễn Thị Quỳnh Mai <nguyenquynhmai273na@gmail.com>
+Date:   Thu Apr 24 22:49:10 2025 +0700
+
+    Merge branch 'dev' into qmai/profile
+
+[33mcommit 973ca39137498f47bcbda28c4ca9ec03d9aba47d[m
+Author: QuynhMai273na <nguyenquynhmai273na@gmail.com>
+Date:   Thu Apr 24 22:41:47 2025 +0700
+
+    profile page
+
+[33mcommit 3506f29c64171d11c7a5f7d45752269326653644[m
+Merg
