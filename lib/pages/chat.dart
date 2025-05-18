@@ -26,9 +26,26 @@ class ChatPage extends StatefulWidget {
 class _ChatPageState extends State<ChatPage> {
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  bool _showScrollToBottomButton = false;
   final ImagePicker _picker = ImagePicker();
   File? _selectedImageFile;
   late UserModel currentUser;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _scrollController.addListener(() {
+      // Nếu người dùng cuộn lên xa khỏi đáy, hiển thị nút mũi tên xuống
+      final isAtBottom = _scrollController.offset <= 100;
+      if (isAtBottom != !_showScrollToBottomButton) {
+        setState(() {
+          _showScrollToBottomButton = !isAtBottom;
+        });
+      }
+    });
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -71,145 +88,164 @@ class _ChatPageState extends State<ChatPage> {
     }
 
     return Scaffold(
-      body: Column(
+      body: Stack(
         children: [
-          Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('families')
-                  .doc(currentUser.familyCode)
-                  .collection('messages')
-                  .orderBy('timestamp', descending: true)
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
-                final docs = snapshot.data!.docs;
+          Column(
+            children: [
+              Expanded(
+                child: StreamBuilder<QuerySnapshot>(
+                  stream: FirebaseFirestore.instance
+                      .collection('families')
+                      .doc(currentUser.familyCode)
+                      .collection('messages')
+                      .orderBy('timestamp', descending: true)
+                      .snapshots(),
+                  builder: (context, snapshot) {
+                    if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+                    final docs = snapshot.data!.docs;
 
-                return ListView.builder(
-                  reverse: true,
-                  controller: _scrollController,
-                  itemCount: docs.length,
-                  itemBuilder: (ctx, i) {
-                    final docId = docs[i].id;
-                    final data = docs[i].data() as Map<String, dynamic>;
-                    final isMe = data['senderId'] == currentUser.id;
+                    return ListView.builder(
+                      reverse: true,
+                      controller: _scrollController,
+                      itemCount: docs.length,
+                      itemBuilder: (ctx, i) {
+                        final docId = docs[i].id;
+                        final data = docs[i].data() as Map<String, dynamic>;
+                        final isMe = data['senderId'] == currentUser.id;
 
-                    markMessageAsRead(
-                      familyCode: currentUser.familyCode,
-                      messageId: docId,
-                      userId: currentUser.id,
-                    );
+                        markMessageAsRead(
+                          familyCode: currentUser.familyCode,
+                          messageId: docId,
+                          userId: currentUser.id,
+                        );
 
-                    return AnimatedContainer(
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeOut,
-                      child: ChatBubble(
-                        isMe: isMe,
-                        text: data['text'],
-                        imageUrl: data['imageUrl'],
-                        senderName: data['senderName'] ?? 'Unknown',
-                        avatarUrl: data['avatarUrl'],
-                        timestamp: (data['timestamp'] as Timestamp?)?.toDate(),
-                      ),
+                        return AnimatedContainer(
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeOut,
+                          child: ChatBubble(
+                            isMe: isMe,
+                            text: data['text'],
+                            imageUrl: data['imageUrl'],
+                            senderName: data['senderName'] ?? 'Unknown',
+                            avatarUrl: data['avatarUrl'],
+                            timestamp: (data['timestamp'] as Timestamp?)?.toDate(),
+                          ),
+                        );
+                      },
                     );
                   },
-                );
-              },
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  )
-                ],
+                ),
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (_selectedImageFile != null)
-                    Container(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      child: Stack(
-                        children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child: Image.file(
-                              _selectedImageFile!,
-                              height: 100,
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                          Positioned(
-                            top: 4,
-                            right: 4,
-                            child: GestureDetector(
-                              onTap: () => setState(() => _selectedImageFile = null),
-                              child: Container(
-                                decoration: const BoxDecoration(
-                                  color: Colors.black54,
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(Icons.close, size: 18, color: Colors.white),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _controller,
-                          decoration: const InputDecoration(
-                            hintText: "Type a message...",
-                            border: InputBorder.none,
-                            hintStyle: TextStyle(color: Colors.black54),
-                          ),
-                        ),
-                      ),
-                      Row(
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.image, color: Colors.black54),
-                            onPressed: pickImageForPreview,
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(),
-                          ),
-                          Container(
-                            margin: const EdgeInsets.symmetric(horizontal: 2),
-                            height: 30,
-                            width: 30,
-                            decoration: BoxDecoration(
-                              color: Colors.grey[300],
-                              shape: BoxShape.circle,
-                            ),
-                            child: IconButton(
-                              icon: const Icon(Icons.send, size: 16, color: Colors.black54),
-                              onPressed: () => handleSend(),
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(),
-                            ),
-                          ),
-                        ],
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.2),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
                       )
                     ],
                   ),
-                ],
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (_selectedImageFile != null)
+                        Container(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          child: Stack(
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: Image.file(
+                                  _selectedImageFile!,
+                                  height: 100,
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                              Positioned(
+                                top: 4,
+                                right: 4,
+                                child: GestureDetector(
+                                  onTap: () => setState(() => _selectedImageFile = null),
+                                  child: Container(
+                                    decoration: const BoxDecoration(
+                                      color: Colors.black54,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(Icons.close, size: 18, color: Colors.white),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: _controller,
+                              decoration: const InputDecoration(
+                                hintText: "Type a message...",
+                                border: InputBorder.none,
+                                hintStyle: TextStyle(color: Colors.black54),
+                              ),
+                            ),
+                          ),
+                          Row(
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.image, color: Colors.black54),
+                                onPressed: pickImageForPreview,
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                              ),
+                              Container(
+                                margin: const EdgeInsets.symmetric(horizontal: 2),
+                                height: 30,
+                                width: 30,
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[300],
+                                  shape: BoxShape.circle,
+                                ),
+                                child: IconButton(
+                                  icon: const Icon(Icons.send, size: 16, color: Colors.black54),
+                                  onPressed: () => handleSend(),
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(),
+                                ),
+                              ),
+                            ],
+                          )
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
+          if (_showScrollToBottomButton)
+            Positioned(
+              bottom: 70,
+              left: 0,
+              right: 0,
+              child: Align(
+                alignment: Alignment.center,
+                child: FloatingActionButton(
+                  mini: true,
+                  onPressed: _scrollToBottom,
+                  backgroundColor: Colors.grey[100],
+                  child: const Icon(Icons.arrow_downward, color: Colors.black54),
+                ),
+              )
+            ),
         ],
-      ),
+      )
     );
   }
 
@@ -256,18 +292,41 @@ class _ChatPageState extends State<ChatPage> {
         familyCode: currentUser.familyCode,
       );
 
-      final response = await http.post(
-        Uri.parse('https://api.imgur.com/3/image'),
-        headers: {
-          'Authorization': 'Client-ID 4a47796c6fc8864',
-        },
-        body: {
-          'image': base64Encode(bytes),
-        },
-      );
+      // final response = await http.post(
+      //   Uri.parse('https://api.imgur.com/3/image'),
+      //   headers: {
+      //     'Authorization': 'Client-ID 4a47796c6fc8864',
+      //   },
+      //   body: {
+      //     'image': base64Encode(bytes),
+      //   },
+      // );
+      //
+      // final data = jsonDecode(response.body);
+      // imageUrl = data['data']['link'];
+      // 🟢 Upload lên Cloudinary
+      final uri = Uri.parse('https://api.cloudinary.com/v1_1/db1dhw93x/image/upload');
 
-      final data = jsonDecode(response.body);
-      imageUrl = data['data']['link'];
+      final request = http.MultipartRequest('POST', uri)
+        ..fields['upload_preset'] = 'family' //
+        ..files.add(
+          http.MultipartFile.fromBytes(
+            'file',
+            bytes,
+            filename: 'chat_image.jpg',
+          ),
+        );
+
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        imageUrl = data['secure_url'];
+      } else {
+        print('❌ Upload failed: ${response.body}');
+        return;
+      }
     }
 
     await sendMessage(

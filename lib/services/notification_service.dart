@@ -46,6 +46,7 @@ class NotificationService {
         'content': notification.content,
         'type': notification.type,
         'status': notification.status,
+        'show': notification.show,
         'time': notification.time,
       });
     } catch (e) {

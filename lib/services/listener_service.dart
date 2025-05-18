@@ -38,7 +38,7 @@ void _listenGeneralNotifications(UserModel user) {
   FirebaseFirestore.instance
       .collection('notifications')
       .where('receiver', isEqualTo: user.email)
-      .where('status', isEqualTo: 0)
+      .where('show', isEqualTo: 0)
       .snapshots()
       .listen((snapshot) {
     for (var doc in snapshot.docs) {
@@ -49,7 +49,7 @@ void _listenGeneralNotifications(UserModel user) {
       );
 
       // ✅ Đánh dấu đã gửi để không show lại
-      doc.reference.update({'status': 1});
+      doc.reference.update({'show': 1});
     }
   });
 }
