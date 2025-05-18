@@ -292,18 +292,41 @@ class _ChatPageState extends State<ChatPage> {
         familyCode: currentUser.familyCode,
       );
 
-      final response = await http.post(
-        Uri.parse('https://api.imgur.com/3/image'),
-        headers: {
-          'Authorization': 'Client-ID 4a47796c6fc8864',
-        },
-        body: {
-          'image': base64Encode(bytes),
-        },
-      );
+      // final response = await http.post(
+      //   Uri.parse('https://api.imgur.com/3/image'),
+      //   headers: {
+      //     'Authorization': 'Client-ID 4a47796c6fc8864',
+      //   },
+      //   body: {
+      //     'image': base64Encode(bytes),
+      //   },
+      // );
+      //
+      // final data = jsonDecode(response.body);
+      // imageUrl = data['data']['link'];
+      // 🟢 Upload lên Cloudinary
+      final uri = Uri.parse('https://api.cloudinary.com/v1_1/db1dhw93x/image/upload');
 
-      final data = jsonDecode(response.body);
-      imageUrl = data['data']['link'];
+      final request = http.MultipartRequest('POST', uri)
+        ..fields['upload_preset'] = 'family' //
+        ..files.add(
+          http.MultipartFile.fromBytes(
+            'file',
+            bytes,
+            filename: 'chat_image.jpg',
+          ),
+        );
+
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        imageUrl = data['secure_url'];
+      } else {
+        print('❌ Upload failed: ${response.body}');
+        return;
+      }
     }
 
     await sendMessage(
