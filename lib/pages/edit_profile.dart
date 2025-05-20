@@ -60,6 +60,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
       // final data = jsonDecode(response.body);
       // if (response.statusCode == 200 && data['success']) {
       //   final uploadedUrl = data['data']['link'];
+
+      // 🟢 Gửi request multipart tới Cloudinary
       final uri = Uri.parse('https://api.cloudinary.com/v1_1/db1dhw93x/image/upload');
 
       final request = http.MultipartRequest('POST', uri)

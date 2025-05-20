@@ -104,5 +104,6 @@ class ImageService {
       throw Exception('Error uploading image: $e');
     }
   }
+
 }
 

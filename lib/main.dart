@@ -20,27 +20,27 @@ FlutterLocalNotificationsPlugin();
 
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
-  _showNotification(message);
+  //_showNotification(message);
 }
 
-Future<void> _showNotification(RemoteMessage message) async {
-  const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
-    'channel_id',
-    'Your Channel Name',
-    importance: Importance.high,
-    priority: Priority.high,
-  );
-
-  const NotificationDetails notificationDetails =
-  NotificationDetails(android: androidDetails);
-
-  await flutterLocalNotificationsPlugin.show(
-    0,
-    message.notification?.title ?? '',
-    message.notification?.body ?? '',
-    notificationDetails,
-  );
-}
+// Future<void> _showNotification(RemoteMessage message) async {
+//   const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+//     'channel_id',
+//     'Your Channel Name',
+//     importance: Importance.high,
+//     priority: Priority.high,
+//   );
+//
+//   const NotificationDetails notificationDetails =
+//   NotificationDetails(android: androidDetails);
+//
+//   await flutterLocalNotificationsPlugin.show(
+//     0,
+//     message.notification?.title ?? '',
+//     message.notification?.body ?? '',
+//     notificationDetails,
+//   );
+// }
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -51,15 +51,15 @@ void main() async {
   final userProvider = UserProvider();
   await userProvider.loadUserFromStorage();
 
-  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  //FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
-  const AndroidInitializationSettings androidInit =
-  AndroidInitializationSettings('@mipmap/ic_launcher');
-
-  const InitializationSettings initSettings =
-  InitializationSettings(android: androidInit);
-
-  await flutterLocalNotificationsPlugin.initialize(initSettings);
+  // const AndroidInitializationSettings androidInit =
+  // AndroidInitializationSettings('@mipmap/ic_launcher');
+  //
+  // const InitializationSettings initSettings =
+  // InitializationSettings(android: androidInit);
+  //
+  // await flutterLocalNotificationsPlugin.initialize(initSettings);
 
 
   runApp(
@@ -88,24 +88,24 @@ class _MyAppState extends State<MyApp> {
     super.initState();
 
     // Khi app đang mở
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      print('🔔 Foreground: ${message.notification?.title}');
-      _showNotification(message);
-    });
-
-    // Lấy token để gửi test từ Firebase Console
-    FirebaseMessaging.instance.getToken().then((value) {
-      print('📲 FCM Token: $value');
-      setState(() {
-        token = value;
-      });
-    });
-
-    // Khi app được mở bằng cách nhấn vào thông báo
-    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      // Bạn có thể điều hướng hoặc xử lý khác ở đây nếu muốn
-      debugPrint('Notification clicked: ${message.notification?.title}');
-    });
+    // FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+    //   print('🔔 Foreground: ${message.notification?.title}');
+    //   _showNotification(message);
+    // });
+    //
+    // // Lấy token để gửi test từ Firebase Console
+    // FirebaseMessaging.instance.getToken().then((value) {
+    //   print('📲 FCM Token: $value');
+    //   setState(() {
+    //     token = value;
+    //   });
+    // });
+    //
+    // // Khi app được mở bằng cách nhấn vào thông báo
+    // FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+    //   // Bạn có thể điều hướng hoặc xử lý khác ở đây nếu muốn
+    //   debugPrint('Notification clicked: ${message.notification?.title}');
+    // });
   }
 
   @override

@@ -305,6 +305,7 @@ class _ChatPageState extends State<ChatPage> {
       // final data = jsonDecode(response.body);
       // imageUrl = data['data']['link'];
       // TODO: Upload lên Cloudinary
+
       final uri = Uri.parse('https://api.cloudinary.com/v1_1/db1dhw93x/image/upload');
 
       final request = http.MultipartRequest('POST', uri)
