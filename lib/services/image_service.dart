@@ -5,21 +5,6 @@ import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 
 class ImageService {
-  // static Future<List<ImageModel>> fetchImagesByFamilyCode(String familyCode) async {
-  //
-  //   final snapshot = await FirebaseFirestore.instance
-  //       .collection('images') // Sửa tên nếu cần
-  //       .where('familyCode', isEqualTo: familyCode)
-  //       .orderBy('time', descending: true)
-  //       .get();
-  //
-  //   final images = snapshot.docs.map((doc) {
-  //     final image = ImageModel.fromMap(doc.id, doc.data());
-  //     return image;
-  //   }).toList();
-  //
-  //   return images;
-  // }
   static Future<List<ImageModel>> fetchImagesByFamilyCode(String familyCode, {int page = 1, int pageSize = 15}) async {
     final snapshot = await FirebaseFirestore.instance
         .collection('images')
@@ -43,7 +28,7 @@ class ImageService {
 
     return images;
   }
-  static const String _clientId = '4a47796c6fc8864';
+  // static const String _clientId = '4a47796c6fc8864';
 
   // static Future<void> uploadImageAndSaveToFirestore({
   //   required Uint8List imageBytes,
