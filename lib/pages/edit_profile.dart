@@ -50,16 +50,34 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
     try {
       final bytes = await pickedFile.readAsBytes();
-      final base64Image = base64Encode(bytes);
-      final response = await http.post(
-        Uri.parse("https://api.imgur.com/3/image"),
-        headers: {"Authorization": "Client-ID 4a47796c6fc8864"},
-        body: {"image": base64Image},
-      );
+      // final base64Image = base64Encode(bytes);
+      // final response = await http.post(
+      //   Uri.parse("https://api.imgur.com/3/image"),
+      //   headers: {"Authorization": "Client-ID 4a47796c6fc8864"},
+      //   body: {"image": base64Image},
+      // );
+      //
+      // final data = jsonDecode(response.body);
+      // if (response.statusCode == 200 && data['success']) {
+      //   final uploadedUrl = data['data']['link'];
+      final uri = Uri.parse('https://api.cloudinary.com/v1_1/db1dhw93x/image/upload');
 
+      final request = http.MultipartRequest('POST', uri)
+        ..fields['upload_preset'] = 'family' // dùng preset unsigned
+        ..files.add(
+          http.MultipartFile.fromBytes(
+            'file',
+            bytes,
+            filename: 'avatar.jpg',
+          ),
+        );
+
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
       final data = jsonDecode(response.body);
-      if (response.statusCode == 200 && data['success']) {
-        final uploadedUrl = data['data']['link'];
+
+      if (response.statusCode == 200 && data['secure_url'] != null) {
+        final uploadedUrl = data['secure_url'];
         setState(() {
           currentUser = currentUser.copyWith(avatar: uploadedUrl);
         });
